@@ -10,6 +10,7 @@ const CONTRACT_ISO_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 const TX_HASH_PATTERN = /0x[0-9a-fA-F]{64}/g;
 const EVM_WRAPPER_HASH_PATTERN = /EVM tx (0x[0-9a-fA-F]{64})/i;
 const BACKPRESSURE_DELAYS_MS = [15_000, 30_000, 60_000, 120_000];
+const READ_RETRY_DELAYS_MS = [10_000, 20_000, 40_000, 80_000, 120_000];
 const MARKET_POLL_INTERVAL_MS = 15_000;
 const MARKET_POLL_TIMEOUT_MS = 10 * 60_000;
 const MIN_DEADLINE_LEAD_MS = 2 * 60 * 60 * 1000;
@@ -68,6 +69,29 @@ function isBackpressureError(error) {
   );
 }
 
+function isTransientReadRpcText(text) {
+  const lowerText = text.toLowerCase();
+  return [
+    "unexpected token '<'",
+    "<!doctype",
+    "is not valid json",
+    "unknownrpcerror",
+    "fetch failed",
+    "bad gateway",
+    "502",
+    "503",
+    "504",
+    "econnreset",
+    "etimedout",
+    "enotfound",
+    "gen_call",
+  ].some((term) => lowerText.includes(term));
+}
+
+function isTransientReadRpcError(error) {
+  return isTransientReadRpcText(errorText(error));
+}
+
 function extractHashes(error) {
   return [...new Set(errorText(error).match(TX_HASH_PATTERN) ?? [])];
 }
@@ -107,8 +131,46 @@ function requireEnv() {
   return { contractAddress, privateKey };
 }
 
-async function readMarkets(client, contractAddress) {
-  const raw = await client.readContract({
+let createMarketSubmitted = false;
+
+async function readContractWithRetries(label, params) {
+  let lastError;
+
+  for (let attempt = 0; attempt <= READ_RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      const result = await client.readContract(params);
+      if (typeof result === "string" && isTransientReadRpcText(result)) {
+        throw new Error(
+          `Bradbury read returned transient invalid/non-JSON response: ${result.slice(0, 500)}`,
+        );
+      }
+      return result;
+    } catch (error) {
+      lastError = error;
+      if (!isTransientReadRpcError(error) || attempt >= READ_RETRY_DELAYS_MS.length) {
+        break;
+      }
+
+      const delayMs = READ_RETRY_DELAYS_MS[attempt];
+      console.log(
+        `RPC read retrying: ${label} after ${Math.round(delayMs / 1000)}s because Bradbury returned a transient invalid/non-JSON response.`,
+      );
+      await sleep(delayMs);
+    }
+  }
+
+  const failureDetails = [
+    !createMarketSubmitted ? "No transaction was submitted before this failure." : null,
+    `Failing read label: ${label}`,
+    `Error text:\n${errorText(lastError)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  fail(`RPC read failed: ${label}.`, failureDetails);
+}
+
+async function readMarkets(label, contractAddress) {
+  const raw = await readContractWithRetries(label, {
     address: contractAddress,
     functionName: "list_markets",
     args: [],
@@ -183,10 +245,10 @@ async function waitForAccepted(client, label, hash) {
   }
 }
 
-async function pollForCreatedMarket(client, contractAddress, expected, existingIds) {
+async function pollForCreatedMarket(contractAddress, expected, existingIds) {
   const deadlineAt = Date.now() + MARKET_POLL_TIMEOUT_MS;
   while (Date.now() < deadlineAt) {
-    const markets = await readMarkets(client, contractAddress);
+    const markets = await readMarkets("polling list_markets after create", contractAddress);
     const matches = markets.filter((market) => {
       const id = String(market.market_id ?? "");
       return (
@@ -254,7 +316,7 @@ console.log("TruthMarket Bradbury smoke test");
 console.log(`contract: ${contractAddress}`);
 console.log(`deadline: ${deadline}`);
 
-const existingMarkets = await readMarkets(client, contractAddress);
+const existingMarkets = await readMarkets("initial list_markets", contractAddress);
 const existingIds = new Set(existingMarkets.map((market) => String(market.market_id ?? "")));
 
 const createTx = await submitWithBackpressureRetries("create_market", () =>
@@ -266,10 +328,10 @@ const createTx = await submitWithBackpressureRetries("create_market", () =>
     value: 0n,
   }),
 );
+createMarketSubmitted = true;
 await waitForAccepted(client, "create_market", createTx);
 
 const market = await pollForCreatedMarket(
-  client,
   contractAddress,
   { title, deadline, createdAtFloor },
   existingIds,
