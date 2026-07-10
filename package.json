@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "deploy:truthmarket": "node scripts/deploy-truthmarket.mjs",
-    "inspect:tx": "node scripts/inspect-tx.mjs"
+    "inspect:tx": "node scripts/inspect-tx.mjs",
+    "inspect:evm-wrapper": "node scripts/inspect-evm-wrapper.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
