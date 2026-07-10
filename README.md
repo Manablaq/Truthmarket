@@ -6,7 +6,7 @@ TruthMarket is an elite GenLayer Bradbury testnet app for AI-adjudicated predict
 
 Live app: not deployed yet  
 GitHub repo: placeholder  
-Contract address: not deployed yet
+Contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
 
 ## Network
 
@@ -19,6 +19,24 @@ Contract address: not deployed yet
 ## Contract
 
 Source: `contracts/truth_market.py`
+
+- Address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
+- Contract explorer: `https://explorer-bradbury.genlayer.com/address/0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
+- Deploy transaction: `0x1111931050a805ba3129c9281f78c5611b8a96ff88f4fca461005ca313135168`
+- Deploy transaction explorer: `https://explorer-bradbury.genlayer.com/tx/0x1111931050a805ba3129c9281f78c5611b8a96ff88f4fca461005ca313135168`
+- Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024`
+
+Live read proof from Bradbury:
+
+```json
+{
+  "finalized_count": "0",
+  "market_count": "0",
+  "total_volume": "0"
+}
+```
+
+No markets exist yet on the deployed contract.
 
 Write methods:
 
@@ -88,7 +106,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Leave `NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS` empty until the contract is deployed.
+The example environment points at the Bradbury deployment.
 
 ## Deployment
 
@@ -99,7 +117,7 @@ export GENLAYER_DEPLOYER_PK=0x...
 npm run deploy:truthmarket
 ```
 
-After Bradbury accepts the deployment transaction, update `NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS` with the deployed contract address.
+The Bradbury deployment has been accepted at `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`. Do not redeploy unless a new contract version is intentionally required.
 
 ## Testing Commands
 
@@ -107,16 +125,14 @@ After Bradbury accepts the deployment transaction, update `NEXT_PUBLIC_TRUTHMARK
 npm run lint
 npm run build
 npm audit
-python3 -m py_compile contracts/truth_market.py
+PYTHONPYCACHEPREFIX=/private/tmp/truthmarket-pycache python3 -m py_compile contracts/truth_market.py
 git diff --check
 git status --short
 ```
 
-## Deployment Checklist
+## Remaining Deployment Checklist
 
-- Deploy `contracts/truth_market.py` to GenLayer Bradbury.
-- Verify the deployed contract address on GenExplorer.
-- Set `NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS`.
+- Deploy the frontend when ready.
 - Test with an injected browser wallet on GenLayer Bradbury.
 - Re-run lint, build, audit, and contract syntax checks.
 - Smoke-test create, stake, evidence, resolve, challenge, finalize, and claim flows.
@@ -124,7 +140,7 @@ git status --short
 ## Current Limitations
 
 - This is a Bradbury testnet app.
-- The contract is not deployed yet.
+- The contract is deployed on Bradbury, but no markets exist yet.
 - The frontend does not fabricate markets, positions, resolutions, or leaderboard rows.
 - AI resolution depends on submitted evidence quality and validator execution.
 - Audit fixes that require breaking wallet-stack upgrades are intentionally not forced.
