@@ -90,6 +90,17 @@ npm run dev
 
 Leave `NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS` empty until the contract is deployed.
 
+## Deployment
+
+Do not paste private keys into chat or commit them to the repo. Export the deployer key only in your local shell:
+
+```bash
+export GENLAYER_DEPLOYER_PK=0x...
+npm run deploy:truthmarket
+```
+
+After Bradbury accepts the deployment transaction, update `NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS` with the deployed contract address.
+
 ## Testing Commands
 
 ```bash
