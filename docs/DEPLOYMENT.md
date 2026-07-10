@@ -9,11 +9,20 @@ Deployment date: 2026-07-10
 
 ## Contract
 
-- Contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
-- Deploy transaction: `0x1111931050a805ba3129c9281f78c5611b8a96ff88f4fca461005ca313135168`
-- Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024`
-- Contract explorer: `https://explorer-bradbury.genlayer.com/address/0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
-- Deploy transaction explorer: `https://explorer-bradbury.genlayer.com/tx/0x1111931050a805ba3129c9281f78c5611b8a96ff88f4fca461005ca313135168`
+- Current version: v0.2.0 pending deployment
+- Current contract address: pending deployment
+- Previous v1 contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
+- Previous v1 deploy transaction: `0x1111931050a805ba3129c9281f78c5611b8a96ff88f4fca461005ca313135168`
+- Previous v1 deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024`
+- Previous v1 contract explorer: `https://explorer-bradbury.genlayer.com/address/0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
+- Previous v1 deploy transaction explorer: `https://explorer-bradbury.genlayer.com/tx/0x1111931050a805ba3129c9281f78c5611b8a96ff88f4fca461005ca313135168`
+
+v2 adds strict UTC ISO deadline enforcement:
+
+- `create_market` requires a future `YYYY-MM-DDTHH:MM:SSZ` deadline.
+- `stake` is blocked after the deadline.
+- `resolve_market` is blocked until after the deadline.
+- No v2 address exists yet.
 
 ## Network
 
@@ -23,7 +32,7 @@ Deployment date: 2026-07-10
 - Explorer: `https://explorer-bradbury.genlayer.com`
 - Native token: GEN
 
-## Live Read Proof
+## Historical v1 Live Read Proof
 
 Command:
 
@@ -43,9 +52,9 @@ Observed `get_stats` output:
 }
 ```
 
-No markets exist yet on this contract.
+No markets existed yet on the previous v1 contract at the time of the proof.
 
-## Live Frontend API Proof
+## Historical v1 Live Frontend API Proof
 
 Command:
 
@@ -64,8 +73,10 @@ Returned:
 }
 ```
 
-No markets exist yet on this contract.
+No markets existed yet on the previous v1 contract at the time of the proof.
 
 ## Next Steps
 
-- Run a real market smoke test on Bradbury.
+- Deploy v2 after verification.
+- Update the configured contract address after v2 deployment.
+- Run a real market smoke test on Bradbury after v2 is live.

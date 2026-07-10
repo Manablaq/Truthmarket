@@ -1,4 +1,4 @@
-# v0.1.0
+# v0.2.0
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 
 from genlayer import *
@@ -122,6 +122,32 @@ def _valid_address(address: str) -> bool:
     return len(address) == 42 and address.startswith("0x")
 
 
+def _is_iso(value: str) -> bool:
+    return (
+        len(value) == 20
+        and value[4] == "-"
+        and value[7] == "-"
+        and value[10] == "T"
+        and value[13] == ":"
+        and value[16] == ":"
+        and value[19] == "Z"
+        and value[0:4].isdigit()
+        and value[5:7].isdigit()
+        and value[8:10].isdigit()
+        and value[11:13].isdigit()
+        and value[14:16].isdigit()
+        and value[17:19].isdigit()
+    )
+
+
+def _normalize_iso(value: str) -> str:
+    normalized = str(value).strip()
+    if normalized.endswith(".000Z"):
+        normalized = normalized[:-5] + "Z"
+    assert _is_iso(normalized), "datetime must be YYYY-MM-DDTHH:MM:SSZ"
+    return normalized
+
+
 def _market_to_json(market: Market) -> str:
     return json.dumps({
         "market_id": market.market_id,
@@ -193,7 +219,7 @@ class TruthMarket(gl.Contract):
         self.total_volume = "0"
 
     def _now(self) -> str:
-        return gl.message_raw["datetime"]
+        return _normalize_iso(str(gl.message_raw["datetime"]))
 
     def _sender(self) -> str:
         return str(gl.message.sender_address)
@@ -268,7 +294,8 @@ class TruthMarket(gl.Contract):
     ) -> str:
         assert len(title.strip()) >= 8, "title too short"
         assert len(description.strip()) >= 20, "description too short"
-        assert len(str(deadline).strip()) >= 8, "deadline required"
+        normalized_deadline = _normalize_iso(deadline)
+        assert normalized_deadline > self._now(), "deadline must be in the future"
 
         market_id = self.next_market_id
         self.next_market_id = str(int(self.next_market_id) + 1)
@@ -280,7 +307,7 @@ class TruthMarket(gl.Contract):
             yes_rules=_clean(yes_rules.strip(), 1000),
             no_rules=_clean(no_rules.strip(), 1000),
             invalid_rules=_clean(invalid_rules.strip(), 1000),
-            deadline=_clean(str(deadline).strip(), 80),
+            deadline=normalized_deadline,
             status=STATUS_OPEN,
             created_at=self._now(),
             resolved_at="",
@@ -301,6 +328,7 @@ class TruthMarket(gl.Contract):
         normalized_side = side.upper()
         amount = self._value()
         assert market.status == STATUS_OPEN, "market is not open"
+        assert self._now() <= market.deadline, "market deadline has passed"
         assert normalized_side in SIDES, "side must be YES, NO, or INVALID"
         assert amount > 0, "stake value must be positive GEN"
 
@@ -362,6 +390,7 @@ class TruthMarket(gl.Contract):
     def resolve_market(self, market_id: str) -> str:
         market = self._require_market(str(market_id))
         assert market.status in [STATUS_OPEN, STATUS_CHALLENGED], "market already resolved or finalized"
+        assert self._now() > market.deadline, "market deadline has not passed"
 
         evidence_items = json.loads(self.evidence_by_market.get(market.market_id, "[]"))
         assert len(evidence_items) > 0, "no evidence submitted"

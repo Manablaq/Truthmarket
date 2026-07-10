@@ -6,7 +6,8 @@ TruthMarket is an elite GenLayer Bradbury testnet app for AI-adjudicated predict
 
 Live app: https://truthmarket-beta.vercel.app
 GitHub repo: placeholder
-Contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
+Current contract: v2 pending deployment
+Previous v1 contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
 
 ## Network
 
@@ -20,13 +21,22 @@ Contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
 
 Source: `contracts/truth_market.py`
 
-- Address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
-- Contract explorer: `https://explorer-bradbury.genlayer.com/address/0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
-- Deploy transaction: `0x1111931050a805ba3129c9281f78c5611b8a96ff88f4fca461005ca313135168`
-- Deploy transaction explorer: `https://explorer-bradbury.genlayer.com/tx/0x1111931050a805ba3129c9281f78c5611b8a96ff88f4fca461005ca313135168`
-- Deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024`
+- Current version: v0.2.0 pending deployment
+- Current address: pending deployment
+- Previous v1 address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
+- Previous v1 contract explorer: `https://explorer-bradbury.genlayer.com/address/0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
+- Previous v1 deploy transaction: `0x1111931050a805ba3129c9281f78c5611b8a96ff88f4fca461005ca313135168`
+- Previous v1 deploy transaction explorer: `https://explorer-bradbury.genlayer.com/tx/0x1111931050a805ba3129c9281f78c5611b8a96ff88f4fca461005ca313135168`
+- Previous v1 deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024`
 
-Live read proof from Bradbury:
+v2 pending deployment:
+
+- Adds strict UTC ISO deadline normalization for `YYYY-MM-DDTHH:MM:SSZ` values.
+- Requires `create_market` deadlines to be in the future.
+- Stops `stake` after the market deadline.
+- Allows `resolve_market` only after the market deadline.
+
+Historical v1 live read proof from Bradbury:
 
 ```json
 {
@@ -55,7 +65,7 @@ Returned:
 }
 ```
 
-This confirms the live frontend API can read the deployed contract, and no markets exist yet.
+This confirms the live frontend API could read the previous v1 deployed contract, and no markets existed at the time of the proof.
 
 Write methods:
 
@@ -125,7 +135,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The example environment points at the Bradbury deployment.
+The example environment points at the previous Bradbury v1 deployment until v2 is deployed and configured.
 
 ## Deployment
 
@@ -139,7 +149,7 @@ export GENLAYER_DEPLOYER_PK=0x...
 npm run deploy:truthmarket
 ```
 
-The Bradbury deployment has been accepted at `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`. Do not redeploy unless a new contract version is intentionally required.
+The previous Bradbury v1 deployment was accepted at `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`. v2 is pending deployment and does not have an address yet.
 
 ## Testing Commands
 
@@ -155,13 +165,14 @@ git status --short
 ## Remaining Deployment Checklist
 
 - Test with an injected browser wallet on GenLayer Bradbury.
+- Deploy v2 with deadline enforcement and update the configured contract address.
 - Re-run lint, build, audit, and contract syntax checks.
 - Smoke-test create, stake, evidence, resolve, challenge, finalize, and claim flows.
 
 ## Current Limitations
 
 - This is a Bradbury testnet app.
-- The contract is deployed on Bradbury, but no markets exist yet.
+- v1 is deployed on Bradbury, but v2 deadline enforcement is pending deployment.
 - The frontend does not fabricate markets, positions, resolutions, or leaderboard rows.
 - AI resolution depends on submitted evidence quality and validator execution.
 - Audit fixes that require breaking wallet-stack upgrades are intentionally not forced.
