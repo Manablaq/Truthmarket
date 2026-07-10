@@ -6,7 +6,8 @@ TruthMarket is an elite GenLayer Bradbury testnet app for AI-adjudicated predict
 
 Live app: https://truthmarket-beta.vercel.app
 GitHub repo: placeholder
-Current contract: v2 `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`
+Current deployed contract: previous v2 `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`
+Pending contract source: v3, not deployed yet
 Previous v1 contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
 
 ## Network
@@ -21,14 +22,17 @@ Previous v1 contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
 
 Source: `contracts/truth_market.py`
 
-- Current version: v0.2.0
-- Current v2 address: `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`
-- Current v2 contract explorer: `https://explorer-bradbury.genlayer.com/address/0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`
-- Current v2 deploy transaction: `0x00d308c6d21e417c396bc7c8854a83b1fde231e5026ba49d196633aa0e607437`
-- Current v2 deploy transaction explorer: `https://explorer-bradbury.genlayer.com/tx/0x00d308c6d21e417c396bc7c8854a83b1fde231e5026ba49d196633aa0e607437`
-- Current v2 deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024`
+- Pending version: v0.3.0, v3 not deployed yet
+- Previous deployed version: v0.2.0
+- Previous v2 address: `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`
+- Previous v2 contract explorer: `https://explorer-bradbury.genlayer.com/address/0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`
+- Previous v2 deploy transaction: `0x00d308c6d21e417c396bc7c8854a83b1fde231e5026ba49d196633aa0e607437`
+- Previous v2 deploy transaction explorer: `https://explorer-bradbury.genlayer.com/tx/0x00d308c6d21e417c396bc7c8854a83b1fde231e5026ba49d196633aa0e607437`
+- Previous v2 deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024`
 
-v2 replaces the previous v1 deployment because v1 had create/evidence proof but lacked deadline enforcement. v2 adds deadline enforcement:
+v3 is pending deployment and replaces v2 because the v2 resolver timed out on Bradbury due live evidence fetching inside `resolve_market`. v3 keeps deadline enforcement and AI adjudication, but resolves using only submitted evidence metadata and notes.
+
+v2 replaced the previous v1 deployment because v1 had create/evidence proof but lacked deadline enforcement. v2 added deadline enforcement:
 
 - Adds strict UTC ISO deadline normalization for `YYYY-MM-DDTHH:MM:SSZ` values.
 - Requires `create_market` deadlines to be in the future.
@@ -53,7 +57,14 @@ v2 live read proof from Bradbury:
 []
 ```
 
-No markets exist yet on the current v2 contract.
+No markets existed yet on the previous v2 contract at the time of the proof.
+
+v2 smoke-test proof from Bradbury:
+
+- `create_market` succeeded.
+- `stake` succeeded.
+- `submit_evidence` succeeded.
+- `resolve_market` timed out twice with `LEADER_TIMEOUT` / `NOT_VOTED`.
 
 Historical v1 deployment:
 
@@ -108,7 +119,7 @@ View methods:
 1. A creator defines a claim and separate YES, NO, and INVALID criteria.
 2. Users stake GEN on YES, NO, or INVALID before the deadline.
 3. Users submit HTTPS evidence URLs and notes.
-4. After the deadline, `resolve_market` fetches evidence and asks validators for structured JSON: verdict, confidence, reasoning, accepted sources, rejected sources, and risk flags.
+4. After the deadline, `resolve_market` uses submitted evidence metadata and notes, then asks validators for structured JSON: verdict, confidence, reasoning, accepted sources, rejected sources, and risk flags.
 5. A resolution can be accepted while finalization is pending. GenExplorer may show accepted (undetermined) during this window.
 6. Finalized markets allow winning-side claims. INVALID-side stakers win when INVALID is the finalized verdict.
 
@@ -120,6 +131,8 @@ The resolver must use source-grounded evidence and explicit market rules:
 - NO only when NO criteria are satisfied or YES criteria clearly failed.
 - INVALID when the claim is ambiguous, impossible to verify, or evidence cannot support either side.
 - UNRESOLVED when more evidence is needed.
+
+In v3, `resolve_market` does not fetch live web content. It treats submitted URLs as source identifiers and relies only on URL, note, and submitted timestamp metadata. Weak evidence should resolve to UNRESOLVED or INVALID.
 
 TruthMarket does not claim legal truth, objective truth, guaranteed fairness, or finality before finalization.
 
@@ -150,7 +163,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The example environment points at the current Bradbury v2 deployment. The Vercel environment still needs the same v2 address and a frontend redeploy before the live app points to v2.
+The example environment still points at the previous Bradbury v2 deployment because v3 is pending deployment and has no address yet.
 
 ## Deployment
 
@@ -164,7 +177,7 @@ export GENLAYER_DEPLOYER_PK=0x...
 npm run deploy:truthmarket
 ```
 
-The current Bradbury v2 deployment was accepted at `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`. The previous v1 deployment at `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c` is historical.
+The previous Bradbury v2 deployment was accepted at `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`. v3 is pending deployment and no v3 address exists in this repo. The previous v1 deployment at `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c` is historical.
 
 ## Testing Commands
 
@@ -180,14 +193,14 @@ git status --short
 ## Remaining Deployment Checklist
 
 - Test with an injected browser wallet on GenLayer Bradbury.
-- Update the Vercel environment to the v2 contract address and redeploy the frontend.
+- Deploy v3 after checks pass, then update the Vercel environment to the v3 contract address and redeploy the frontend.
 - Re-run lint, build, audit, and contract syntax checks.
-- Smoke-test create, stake, evidence, resolve, challenge, finalize, and claim flows on v2.
+- Smoke-test create, stake, evidence, resolve, challenge, finalize, and claim flows on v3.
 
 ## Current Limitations
 
 - This is a Bradbury testnet app.
-- v2 is deployed on Bradbury, but the frontend still needs a Vercel env update and redeploy before it points to v2.
+- v3 is pending deployment; the example environment remains on the previous v2 address until a v3 address exists.
 - The frontend does not fabricate markets, positions, resolutions, or leaderboard rows.
 - AI resolution depends on submitted evidence quality and validator execution.
 - Audit fixes that require breaking wallet-stack upgrades are intentionally not forced.

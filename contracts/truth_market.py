@@ -1,4 +1,4 @@
-# v0.2.0
+# v0.3.0
 # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 
 from genlayer import *
@@ -395,24 +395,19 @@ class TruthMarket(gl.Contract):
         evidence_items = json.loads(self.evidence_by_market.get(market.market_id, "[]"))
         assert len(evidence_items) > 0, "no evidence submitted"
 
-        def _fetch_and_resolve() -> str:
+        def _resolve_from_metadata() -> str:
             source_packets = []
             for evidence in evidence_items[:MAX_SOURCES]:
-                fetched = ""
-                try:
-                    response = gl.nondet.web.get(str(evidence.get("url", "")))
-                    fetched = response.body.decode("utf-8")[:3000]
-                except:
-                    fetched = ""
                 source_packets.append({
                     "url": str(evidence.get("url", "")),
-                    "submitted_at": str(evidence.get("submitted_at", "")),
                     "note": str(evidence.get("note", "")),
-                    "content": fetched if fetched else "UNAVAILABLE_OR_BLOCKED",
+                    "submitted_at": str(evidence.get("submitted_at", "")),
                 })
 
             prompt = (
-                "Resolve this Bradbury testnet prediction market using only source-grounded evidence.\n\n"
+                "Resolve using only submitted evidence metadata and notes. "
+                "Do not assume inaccessible page content. "
+                "Treat URLs as source identifiers, not fetched proof.\n\n"
                 "Title: " + market.title + "\n"
                 "Description: " + market.description + "\n"
                 "Deadline: " + market.deadline + "\n"
@@ -420,11 +415,10 @@ class TruthMarket(gl.Contract):
                 "NO rules: " + market.no_rules + "\n"
                 "INVALID rules: " + market.invalid_rules + "\n\n"
                 "Criteria:\n"
-                "- YES only if yes_rules are satisfied by source-grounded evidence before or at the deadline.\n"
+                "- YES only if yes_rules are satisfied by submitted metadata or notes before or at the deadline.\n"
                 "- NO only if no_rules are satisfied or yes_rules clearly failed.\n"
-                "- INVALID if the claim is ambiguous, impossible to verify, or evidence cannot support either side.\n"
-                "- UNRESOLVED if more evidence is needed.\n"
-                "- Do not claim legal truth, guaranteed fairness, or objective truth.\n\n"
+                "- INVALID if the claim is ambiguous, impossible to verify, or metadata cannot support either side.\n"
+                "- UNRESOLVED if the evidence is too weak or more evidence is needed.\n\n"
                 "Evidence JSON: " + json.dumps(source_packets) + "\n\n"
                 "Return JSON only with fields: verdict, confidence, reasoning, accepted_sources, rejected_sources, risk_flags."
             )
@@ -432,9 +426,9 @@ class TruthMarket(gl.Contract):
             return json.dumps(result, sort_keys=True)
 
         result_raw = gl.eq_principle.prompt_non_comparative(
-            _fetch_and_resolve,
+            _resolve_from_metadata,
             task=(
-                "Resolve the market from fetched evidence and return a structured JSON verdict. "
+                "Resolve the market from submitted evidence metadata and notes, then return a structured JSON verdict. "
                 "Do not overclaim truth beyond the evidence and market criteria."
             ),
             criteria=(
