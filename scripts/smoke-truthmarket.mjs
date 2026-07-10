@@ -6,6 +6,7 @@ import { parseEther } from "viem";
 
 const PRIVATE_KEY_PATTERN = /^0x[0-9a-fA-F]{64}$/;
 const ADDRESS_PATTERN = /^0x[0-9a-fA-F]{40}$/;
+const CONTRACT_ISO_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 const TX_HASH_PATTERN = /0x[0-9a-fA-F]{64}/g;
 const EVM_WRAPPER_HASH_PATTERN = /EVM tx (0x[0-9a-fA-F]{64})/i;
 const BACKPRESSURE_DELAYS_MS = [15_000, 30_000, 60_000, 120_000];
@@ -35,7 +36,14 @@ function parseJsonReturn(value) {
 }
 
 function compactIso(date) {
-  return date.toISOString().replace(".000Z", "Z");
+  return date.toISOString().split(".")[0] + "Z";
+}
+
+function assertContractIso(label, value) {
+  if (!CONTRACT_ISO_PATTERN.test(value)) {
+    fail(`${label} must match YYYY-MM-DDTHH:MM:SSZ before submitting a transaction.`, value);
+  }
+  return value;
 }
 
 function errorText(error) {
@@ -222,7 +230,11 @@ const client = createClient({
 });
 
 const startedAt = new Date();
-const deadline = compactIso(new Date(Date.now() + MIN_DEADLINE_LEAD_MS + 5 * 60_000));
+const deadline = assertContractIso(
+  "deadline",
+  compactIso(new Date(Date.now() + MIN_DEADLINE_LEAD_MS + 5 * 60_000)),
+);
+const createdAtFloor = assertContractIso("createdAtFloor", compactIso(startedAt));
 const runId = compactIso(startedAt).replace(/[-:]/g, "").replace("Z", "Z");
 const stakeGen = process.env.SMOKE_STAKE_GEN ?? "0.001";
 const title = `TruthMarket smoke test ${runId}`;
@@ -259,7 +271,7 @@ await waitForAccepted(client, "create_market", createTx);
 const market = await pollForCreatedMarket(
   client,
   contractAddress,
-  { title, deadline, createdAtFloor: compactIso(startedAt) },
+  { title, deadline, createdAtFloor },
   existingIds,
 );
 const marketId = String(market.market_id);

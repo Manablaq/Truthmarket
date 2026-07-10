@@ -32,7 +32,7 @@ v3 replaces v2 because the v2 resolver timed out on Bradbury due live evidence f
 
 v2 replaced v1 because v1 had create/evidence proof but lacked deadline enforcement. v2 added strict UTC ISO deadline enforcement:
 
-- `create_market` requires a future `YYYY-MM-DDTHH:MM:SSZ` deadline.
+- `create_market` requires a future second-precision UTC ISO `YYYY-MM-DDTHH:MM:SSZ` deadline.
 - `stake` is blocked after the deadline.
 - `resolve_market` is blocked until after the deadline.
 
@@ -75,6 +75,7 @@ No markets existed yet on the current v3 contract at the time of the proof. A fu
 
 - Run `npm run smoke:truthmarket` with `NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS` and `GENLAYER_DEPLOYER_PK` exported locally.
 - The smoke script uses GenLayer Bradbury, validates but never prints the private key, creates a market with a deadline more than 2 hours in the future, waits for `create_market` to reach `ACCEPTED`, then polls accepted `list_markets` until a new market appears with the expected title, deadline, and `created_at` window before staking.
+- Contract deadlines must be second-precision UTC ISO values: `YYYY-MM-DDTHH:MM:SSZ`. The smoke script strips milliseconds and validates the format before submitting `create_market`.
 - The script stakes YES only on that confirmed new market, submits one evidence note, prints the market id and create/stake/evidence transaction hashes, then stops. It does not resolve automatically.
 - Bradbury can reject `eth_sendRawTransaction` before any EVM wrapper tx hash or GenLayer consensus tx id exists with `Node is not currently accepting transactions: pipeline backpressure (l1_sender_commit)`. That is RPC/node backpressure, not proof of a contract error. The smoke script retries only that pre-hash case with 15s, 30s, 60s, and 120s backoff.
 - If an error includes an EVM wrapper tx hash, inspect it with `npm run inspect:evm-wrapper -- <hash>` instead of retrying blindly.
