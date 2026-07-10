@@ -6,8 +6,8 @@ TruthMarket is an elite GenLayer Bradbury testnet app for AI-adjudicated predict
 
 Live app: https://truthmarket-beta.vercel.app
 GitHub repo: placeholder
-Current deployed contract: previous v2 `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`
-Pending contract source: v3, not deployed yet
+Current deployed contract: v3 `0xa7105D2A409b769B62a456E1d57B1210B875cEA5`
+Current deploy tx: `0xd13f753ded6e988dc30e750fb5d6f08348cba3d9e8cd233e1254fb1e091f427d`
 Previous v1 contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
 
 ## Network
@@ -22,7 +22,13 @@ Previous v1 contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
 
 Source: `contracts/truth_market.py`
 
-- Pending version: v0.3.0, v3 not deployed yet
+- Current deployed version: v0.3.0
+- Current v3 address: `0xa7105D2A409b769B62a456E1d57B1210B875cEA5`
+- Current v3 contract explorer: `https://explorer-bradbury.genlayer.com/address/0xa7105D2A409b769B62a456E1d57B1210B875cEA5`
+- Current v3 deploy transaction: `0xd13f753ded6e988dc30e750fb5d6f08348cba3d9e8cd233e1254fb1e091f427d`
+- Current v3 deploy transaction explorer: `https://explorer-bradbury.genlayer.com/tx/0xd13f753ded6e988dc30e750fb5d6f08348cba3d9e8cd233e1254fb1e091f427d`
+- Current v3 txExecutionHash: `0x564211e5b3daed43a2c7020ee7226c9859a688552453778c5a50514d2ed21292`
+- Current v3 deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024`
 - Previous deployed version: v0.2.0
 - Previous v2 address: `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`
 - Previous v2 contract explorer: `https://explorer-bradbury.genlayer.com/address/0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`
@@ -30,7 +36,27 @@ Source: `contracts/truth_market.py`
 - Previous v2 deploy transaction explorer: `https://explorer-bradbury.genlayer.com/tx/0x00d308c6d21e417c396bc7c8854a83b1fde231e5026ba49d196633aa0e607437`
 - Previous v2 deployer: `0x1f87Ae197af539253978d435aD45cCf28Fb95024`
 
-v3 is pending deployment and replaces v2 because the v2 resolver timed out on Bradbury due live evidence fetching inside `resolve_market`. v3 keeps deadline enforcement and AI adjudication, but resolves using only submitted evidence metadata and notes.
+v3 replaces v2 because the v2 resolver timed out on Bradbury due live evidence fetching inside `resolve_market`. v3 keeps deadline enforcement and AI adjudication, but `resolve_market` uses submitted evidence metadata and notes instead of live web fetching.
+
+v3 live read proof from Bradbury:
+
+- `get_stats` returned:
+
+```json
+{
+  "finalized_count": "0",
+  "market_count": "0",
+  "total_volume": "0"
+}
+```
+
+- `list_markets` returned:
+
+```json
+[]
+```
+
+No markets existed yet on the current v3 contract at the time of the proof. A full v3 smoke test is not complete yet.
 
 v2 replaced the previous v1 deployment because v1 had create/evidence proof but lacked deadline enforcement. v2 added deadline enforcement:
 
@@ -91,7 +117,7 @@ Returned:
 }
 ```
 
-This confirms the live frontend API could read the previous v1 deployed contract, and no markets existed at the time of the proof. The Vercel environment still needs to be updated to the v2 contract address and the frontend redeployed before the live app points to v2.
+This confirms the live frontend API could read the previous v1 deployed contract, and no markets existed at the time of the proof. The Vercel production environment still needs to be updated to the v3 contract address and the frontend redeployed before the live app points to v3.
 
 Write methods:
 
@@ -163,7 +189,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The example environment still points at the previous Bradbury v2 deployment because v3 is pending deployment and has no address yet.
+The example environment points at the current Bradbury v3 deployment.
 
 ## Deployment
 
@@ -177,7 +203,7 @@ export GENLAYER_DEPLOYER_PK=0x...
 npm run deploy:truthmarket
 ```
 
-The previous Bradbury v2 deployment was accepted at `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`. v3 is pending deployment and no v3 address exists in this repo. The previous v1 deployment at `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c` is historical.
+The current Bradbury v3 deployment was accepted at `0xa7105D2A409b769B62a456E1d57B1210B875cEA5`. The previous v2 deployment at `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791` and previous v1 deployment at `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c` are historical.
 
 ## Testing Commands
 
@@ -193,14 +219,14 @@ git status --short
 ## Remaining Deployment Checklist
 
 - Test with an injected browser wallet on GenLayer Bradbury.
-- Deploy v3 after checks pass, then update the Vercel environment to the v3 contract address and redeploy the frontend.
+- Update the Vercel production environment to the v3 contract address and redeploy the frontend.
 - Re-run lint, build, audit, and contract syntax checks.
 - Smoke-test create, stake, evidence, resolve, challenge, finalize, and claim flows on v3.
 
 ## Current Limitations
 
 - This is a Bradbury testnet app.
-- v3 is pending deployment; the example environment remains on the previous v2 address until a v3 address exists.
+- The Vercel production environment still needs to be updated and redeployed before the live app points to v3.
 - The frontend does not fabricate markets, positions, resolutions, or leaderboard rows.
 - AI resolution depends on submitted evidence quality and validator execution.
 - Audit fixes that require breaking wallet-stack upgrades are intentionally not forced.
