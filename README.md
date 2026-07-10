@@ -58,6 +58,13 @@ v3 live read proof from Bradbury:
 
 No markets existed yet on the current v3 contract at the time of the proof. A full v3 smoke test is not complete yet.
 
+v3 smoke-test note:
+
+- Use deadlines at least 60 minutes in the future. Bradbury consensus acceptance can lag wallet submission, and `create_market` checks that the deadline is still in the future when the transaction executes.
+- Do not treat a returned transaction hash as accepted. Inspect it with `npm run inspect:tx -- <0x transaction hash>` and confirm the status/result before reading market state.
+- Run create, stake, and evidence submission before the deadline. Run `resolve_market` only after the deadline has passed.
+- Do not use 4-minute or 5-minute smoke-test deadlines; they can expire while the transaction is still pending/proposing.
+
 v2 replaced the previous v1 deployment because v1 had create/evidence proof but lacked deadline enforcement. v2 added deadline enforcement:
 
 - Adds strict UTC ISO deadline normalization for `YYYY-MM-DDTHH:MM:SSZ` values.
@@ -146,8 +153,9 @@ View methods:
 2. Users stake GEN on YES, NO, or INVALID before the deadline.
 3. Users submit HTTPS evidence URLs and notes.
 4. After the deadline, `resolve_market` uses submitted evidence metadata and notes, then asks validators for structured JSON: verdict, confidence, reasoning, accepted sources, rejected sources, and risk flags.
-5. A resolution can be accepted while finalization is pending. GenExplorer may show accepted (undetermined) during this window.
-6. Finalized markets allow winning-side claims. INVALID-side stakers win when INVALID is the finalized verdict.
+5. A write first returns a Bradbury consensus transaction id. It is not accepted until transaction diagnostics or accepted contract reads prove acceptance.
+6. A resolution can be accepted while finalization is pending. GenExplorer may show accepted (undetermined) during this window.
+7. Finalized markets allow winning-side claims. INVALID-side stakers win when INVALID is the finalized verdict.
 
 ## AI Resolution Design
 
@@ -177,6 +185,7 @@ TruthMarket does not claim legal truth, objective truth, guaranteed fairness, or
 Use Bradbury wording in UI and docs:
 
 - Submitted
+- Submitted to Bradbury consensus - acceptance pending
 - Accepted - finalization pending
 - Score/market state may be readable from accepted state
 - GenExplorer may show accepted (undetermined) during the finalization window
@@ -205,6 +214,14 @@ npm run deploy:truthmarket
 
 The current Bradbury v3 deployment was accepted at `0xa7105D2A409b769B62a456E1d57B1210B875cEA5`. The previous v2 deployment at `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791` and previous v1 deployment at `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c` are historical.
 
+## Transaction Diagnostics
+
+```bash
+npm run inspect:tx -- <0x transaction hash>
+```
+
+The inspector prints the current status, execution result, queue position when available, and BigInt-safe JSON. If a transaction has not reached a decided state, it reports that no accepted state change exists yet instead of waiting indefinitely for `ACCEPTED`.
+
 ## Testing Commands
 
 ```bash
@@ -219,14 +236,12 @@ git status --short
 ## Remaining Deployment Checklist
 
 - Test with an injected browser wallet on GenLayer Bradbury.
-- Update the Vercel production environment to the v3 contract address and redeploy the frontend.
 - Re-run lint, build, audit, and contract syntax checks.
 - Smoke-test create, stake, evidence, resolve, challenge, finalize, and claim flows on v3.
 
 ## Current Limitations
 
 - This is a Bradbury testnet app.
-- The Vercel production environment still needs to be updated and redeployed before the live app points to v3.
 - The frontend does not fabricate markets, positions, resolutions, or leaderboard rows.
 - AI resolution depends on submitted evidence quality and validator execution.
 - Audit fixes that require breaking wallet-stack upgrades are intentionally not forced.

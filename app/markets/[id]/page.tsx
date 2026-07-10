@@ -33,7 +33,7 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
     try {
       if (!address || typeof window === "undefined" || !window.ethereum) throw new Error("Connect a wallet first.");
       const hash = await writeTruthMarket({ account: address, provider: window.ethereum, functionName, args, value: parseEther(value) });
-      setMessage(`${describeTransactionStatus("accepted")} after wallet submission. Hash: ${hash}`);
+      setMessage(`${describeTransactionStatus("txid")}. Hash: ${hash}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Transaction failed");
     }

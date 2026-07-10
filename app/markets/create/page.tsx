@@ -7,6 +7,8 @@ import { EmptyState, Section, StatusPill } from "../../components/chrome";
 import { isContractConfigured } from "@/lib/config";
 import { describeTransactionStatus, writeTruthMarket } from "@/lib/genlayer";
 
+const MIN_DEADLINE_LEAD_MS = 60 * 60 * 1000;
+
 export default function CreateMarketPage() {
   const { address, isConnected } = useAccount();
   const [message, setMessage] = useState("");
@@ -15,7 +17,15 @@ export default function CreateMarketPage() {
     setMessage(describeTransactionStatus("submitted"));
     try {
       if (!address || typeof window === "undefined" || !window.ethereum) throw new Error("Connect a wallet first.");
-      const deadline = new Date(String(formData.get("deadline"))).toISOString();
+      const rawDeadline = String(formData.get("deadline"));
+      const deadlineDate = new Date(rawDeadline);
+      if (!rawDeadline || Number.isNaN(deadlineDate.getTime())) {
+        throw new Error("Choose a valid deadline.");
+      }
+      if (deadlineDate.getTime() < Date.now() + MIN_DEADLINE_LEAD_MS) {
+        throw new Error("Deadline must be at least 1 hour from now so Bradbury has time to accept the create transaction.");
+      }
+      const deadline = deadlineDate.toISOString();
       const hash = await writeTruthMarket({
         account: address,
         provider: window.ethereum,
@@ -30,7 +40,7 @@ export default function CreateMarketPage() {
         ],
         value: parseEther("0"),
       });
-      setMessage(`${describeTransactionStatus("accepted")} after wallet submission. Hash: ${hash}`);
+      setMessage(`${describeTransactionStatus("txid")}. Hash: ${hash}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Create transaction failed");
     }
@@ -68,6 +78,9 @@ export default function CreateMarketPage() {
           <label className="grid gap-2 text-sm text-white/72">
             Deadline
             <input name="deadline" required type="datetime-local" className="border border-white/10 bg-black/30 p-3 text-white outline-none focus:border-amber-300/60" />
+            <span className="text-xs leading-5 text-white/45">
+              Use a deadline at least 1 hour from now. Bradbury acceptance can lag wallet submission.
+            </span>
           </label>
           <button disabled={!isContractConfigured() || !isConnected} className="bg-amber-300 px-4 py-3 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-40">
             Submit create transaction

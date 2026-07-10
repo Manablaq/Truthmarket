@@ -100,9 +100,10 @@ export async function waitForFinalized(hash: Hash) {
 }
 
 export function describeTransactionStatus(
-  status: "submitted" | "accepted" | "finalized" | "failed",
+  status: "submitted" | "accepted" | "finalized" | "failed" | "txid",
 ) {
   if (status === "submitted") return "Submitted";
+  if (status === "txid") return "Submitted to Bradbury consensus - acceptance pending";
   if (status === "accepted") return "Accepted - finalization pending";
   if (status === "finalized") return "Finalized";
   return "Failed";

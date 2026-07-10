@@ -71,6 +71,13 @@ Observed `list_markets` output:
 
 No markets existed yet on the current v3 contract at the time of the proof. A full v3 smoke test is not complete yet.
 
+## v3 Smoke-Test Guidance
+
+- Use deadlines at least 60 minutes in the future. Bradbury consensus acceptance can lag wallet submission, and `create_market` checks that the deadline is still in the future when the transaction executes.
+- Do not treat a returned transaction hash as accepted. Inspect it with `npm run inspect:tx -- <0x transaction hash>` and confirm the status/result before reading market state.
+- Run create, stake, and evidence submission before the deadline. Run `resolve_market` only after the deadline has passed.
+- Do not use 4-minute or 5-minute smoke-test deadlines; they can expire while the transaction is still pending/proposing.
+
 ## Previous v2 Deployment Proof
 
 - Contract explorer: `https://explorer-bradbury.genlayer.com/address/0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791`
@@ -149,8 +156,14 @@ Returned:
 
 No markets existed yet on the previous v1 contract at the time of the proof.
 
+## Transaction Diagnostics
+
+```bash
+npm run inspect:tx -- <0x transaction hash>
+```
+
+The inspector prints the current status, execution result, queue position when available, and BigInt-safe JSON. If a transaction has not reached a decided state, it reports that no accepted state change exists yet instead of waiting indefinitely for `ACCEPTED`.
+
 ## Next Steps
 
-- Update the Vercel production environment to the v3 contract address.
-- Redeploy the frontend so the live app points to v3.
 - Run a real v3 market smoke test on Bradbury.
