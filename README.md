@@ -4,8 +4,8 @@ Markets settled by evidence, not trust.
 
 TruthMarket is an elite GenLayer Bradbury testnet app for AI-adjudicated prediction and accountability markets. Users create real-world claim markets, stake GEN on YES, NO, or INVALID, submit evidence URLs, and ask GenLayer validators to resolve outcomes with structured source-grounded reasoning.
 
-Live app: not deployed yet  
-GitHub repo: placeholder  
+Live app: https://truthmarket-beta.vercel.app
+GitHub repo: placeholder
 Contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
 
 ## Network
@@ -37,6 +37,25 @@ Live read proof from Bradbury:
 ```
 
 No markets exist yet on the deployed contract.
+
+Live frontend API proof:
+
+```bash
+curl -sS -X POST https://truthmarket-beta.vercel.app/api/contract \
+  -H 'content-type: application/json' \
+  --data '{"method":"get_stats","args":[]}' | python3 -m json.tool
+```
+
+Returned:
+
+```json
+{
+  "ok": true,
+  "result": "{\"finalized_count\": \"0\", \"market_count\": \"0\", \"total_volume\": \"0\"}"
+}
+```
+
+This confirms the live frontend API can read the deployed contract, and no markets exist yet.
 
 Write methods:
 
@@ -110,6 +129,9 @@ The example environment points at the Bradbury deployment.
 
 ## Deployment
 
+- Live app: https://truthmarket-beta.vercel.app
+- Latest production deployment: https://truthmarket-db4b2pzrj-mr-albert-s-projects.vercel.app
+
 Do not paste private keys into chat or commit them to the repo. Export the deployer key only in your local shell:
 
 ```bash
@@ -132,7 +154,6 @@ git status --short
 
 ## Remaining Deployment Checklist
 
-- Deploy the frontend when ready.
 - Test with an injected browser wallet on GenLayer Bradbury.
 - Re-run lint, build, audit, and contract syntax checks.
 - Smoke-test create, stake, evidence, resolve, challenge, finalize, and claim flows.

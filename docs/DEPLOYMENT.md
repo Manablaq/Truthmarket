@@ -2,6 +2,11 @@
 
 Deployment date: 2026-07-10
 
+## Frontend
+
+- Live app: https://truthmarket-beta.vercel.app
+- Latest production deployment: https://truthmarket-db4b2pzrj-mr-albert-s-projects.vercel.app
+
 ## Contract
 
 - Contract address: `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c`
@@ -40,7 +45,27 @@ Observed `get_stats` output:
 
 No markets exist yet on this contract.
 
+## Live Frontend API Proof
+
+Command:
+
+```bash
+curl -sS -X POST https://truthmarket-beta.vercel.app/api/contract \
+  -H 'content-type: application/json' \
+  --data '{"method":"get_stats","args":[]}' | python3 -m json.tool
+```
+
+Returned:
+
+```json
+{
+  "ok": true,
+  "result": "{\"finalized_count\": \"0\", \"market_count\": \"0\", \"total_volume\": \"0\"}"
+}
+```
+
+No markets exist yet on this contract.
+
 ## Next Steps
 
-- Deploy the frontend to Vercel.
 - Run a real market smoke test on Bradbury.
