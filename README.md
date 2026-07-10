@@ -56,14 +56,20 @@ v3 live read proof from Bradbury:
 []
 ```
 
-No markets existed yet on the current v3 contract at the time of the proof. A full v3 smoke test is not complete yet.
+No markets existed yet on the current v3 contract at the time of the proof.
 
-v3 smoke-test note:
+v3 smoke-test tooling:
 
-- Use deadlines at least 60 minutes in the future. Bradbury consensus acceptance can lag wallet submission, and `create_market` checks that the deadline is still in the future when the transaction executes.
+- Run `npm run smoke:truthmarket` with `NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS` and `GENLAYER_DEPLOYER_PK` exported locally.
+- The smoke script uses GenLayer Bradbury, validates but never prints the private key, creates a market with a deadline more than 2 hours in the future, waits for `create_market` to reach `ACCEPTED`, then polls accepted `list_markets` until a new market appears with the expected title, deadline, and `created_at` window before staking.
+- The script stakes YES only on that confirmed new market, submits one evidence note, prints the market id and create/stake/evidence transaction hashes, then stops. It does not resolve automatically.
+- Bradbury can reject `eth_sendRawTransaction` before any EVM wrapper tx hash or GenLayer consensus tx id exists with `Node is not currently accepting transactions: pipeline backpressure (l1_sender_commit)`. That is RPC/node backpressure, not proof of a contract error. The smoke script retries only that pre-hash case with 15s, 30s, 60s, and 120s backoff.
+- If an error includes an EVM wrapper tx hash, inspect it with `npm run inspect:evm-wrapper -- <hash>` instead of retrying blindly.
+- If a GenLayer consensus tx hash exists but does not accept, inspect it with `npm run inspect:tx -- <hash>` instead of retrying blindly.
 - Do not treat a returned transaction hash as accepted. Inspect it with `npm run inspect:tx -- <0x transaction hash>` and confirm the status/result before reading market state.
 - Run create, stake, and evidence submission before the deadline. Run `resolve_market` only after the deadline has passed.
 - Do not use 4-minute or 5-minute smoke-test deadlines; they can expire while the transaction is still pending/proposing.
+- Market 1 and Market 2 were diagnostic attempts, not final successful v3 smoke tests. Market 2 exists and is OPEN, but its stake retry failed before any tx hash because Bradbury RPC rejected `eth_sendRawTransaction` with pipeline backpressure.
 
 v2 replaced the previous v1 deployment because v1 had create/evidence proof but lacked deadline enforcement. v2 added deadline enforcement:
 
@@ -205,11 +211,17 @@ The example environment points at the current Bradbury v3 deployment.
 - Live app: https://truthmarket-beta.vercel.app
 - Latest production deployment: https://truthmarket-db4b2pzrj-mr-albert-s-projects.vercel.app
 
-Do not paste private keys into chat or commit them to the repo. Export the deployer key only in your local shell:
+Do not paste private keys into chat or commit them to the repo. Read the deployer key into your local shell without echoing it:
 
 ```bash
-export GENLAYER_DEPLOYER_PK=0x...
+printf "Paste deployer private key, then press Enter: "
+stty -echo
+IFS= read -r GENLAYER_DEPLOYER_PK
+stty echo
+printf "\n"
+export GENLAYER_DEPLOYER_PK
 npm run deploy:truthmarket
+unset GENLAYER_DEPLOYER_PK
 ```
 
 The current Bradbury v3 deployment was accepted at `0xa7105D2A409b769B62a456E1d57B1210B875cEA5`. The previous v2 deployment at `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791` and previous v1 deployment at `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c` are historical.
@@ -218,6 +230,18 @@ The current Bradbury v3 deployment was accepted at `0xa7105D2A409b769B62a456E1d5
 
 ```bash
 npm run inspect:tx -- <0x transaction hash>
+```
+
+```bash
+export NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS=0xa7105D2A409b769B62a456E1d57B1210B875cEA5
+printf "Paste deployer private key, then press Enter: "
+stty -echo
+IFS= read -r GENLAYER_DEPLOYER_PK
+stty echo
+printf "\n"
+export GENLAYER_DEPLOYER_PK
+npm run smoke:truthmarket
+unset GENLAYER_DEPLOYER_PK
 ```
 
 The inspector prints the current status, execution result, queue position when available, and BigInt-safe JSON. If a transaction has not reached a decided state, it reports that no accepted state change exists yet instead of waiting indefinitely for `ACCEPTED`.

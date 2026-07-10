@@ -73,10 +73,30 @@ No markets existed yet on the current v3 contract at the time of the proof. A fu
 
 ## v3 Smoke-Test Guidance
 
-- Use deadlines at least 60 minutes in the future. Bradbury consensus acceptance can lag wallet submission, and `create_market` checks that the deadline is still in the future when the transaction executes.
+- Run `npm run smoke:truthmarket` with `NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS` and `GENLAYER_DEPLOYER_PK` exported locally.
+- The smoke script uses GenLayer Bradbury, validates but never prints the private key, creates a market with a deadline more than 2 hours in the future, waits for `create_market` to reach `ACCEPTED`, then polls accepted `list_markets` until a new market appears with the expected title, deadline, and `created_at` window before staking.
+- The script stakes YES only on that confirmed new market, submits one evidence note, prints the market id and create/stake/evidence transaction hashes, then stops. It does not resolve automatically.
+- Bradbury can reject `eth_sendRawTransaction` before any EVM wrapper tx hash or GenLayer consensus tx id exists with `Node is not currently accepting transactions: pipeline backpressure (l1_sender_commit)`. That is RPC/node backpressure, not proof of a contract error. The smoke script retries only that pre-hash case with 15s, 30s, 60s, and 120s backoff.
+- If an error includes an EVM wrapper tx hash, inspect it with `npm run inspect:evm-wrapper -- <hash>` instead of retrying blindly.
+- If a GenLayer consensus tx hash exists but does not accept, inspect it with `npm run inspect:tx -- <hash>` instead of retrying blindly.
 - Do not treat a returned transaction hash as accepted. Inspect it with `npm run inspect:tx -- <0x transaction hash>` and confirm the status/result before reading market state.
 - Run create, stake, and evidence submission before the deadline. Run `resolve_market` only after the deadline has passed.
 - Do not use 4-minute or 5-minute smoke-test deadlines; they can expire while the transaction is still pending/proposing.
+- Market 1 and Market 2 were diagnostic attempts, not final successful v3 smoke tests. Market 2 exists and is OPEN, but its stake retry failed before any tx hash because Bradbury RPC rejected `eth_sendRawTransaction` with pipeline backpressure.
+
+Smoke command:
+
+```bash
+export NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS=0xa7105D2A409b769B62a456E1d57B1210B875cEA5
+printf "Paste deployer private key, then press Enter: "
+stty -echo
+IFS= read -r GENLAYER_DEPLOYER_PK
+stty echo
+printf "\n"
+export GENLAYER_DEPLOYER_PK
+npm run smoke:truthmarket
+unset GENLAYER_DEPLOYER_PK
+```
 
 ## Previous v2 Deployment Proof
 
@@ -166,4 +186,4 @@ The inspector prints the current status, execution result, queue position when a
 
 ## Next Steps
 
-- Run a real v3 market smoke test on Bradbury.
+- Run `npm run smoke:truthmarket` on Bradbury and keep the printed market id, create tx, stake tx, evidence tx, and deadline with the deployment record.

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "deploy:truthmarket": "node scripts/deploy-truthmarket.mjs",
+    "smoke:truthmarket": "node scripts/smoke-truthmarket.mjs",
     "inspect:tx": "node scripts/inspect-tx.mjs",
     "inspect:evm-wrapper": "node scripts/inspect-evm-wrapper.mjs"
   },
