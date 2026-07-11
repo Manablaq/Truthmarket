@@ -8,7 +8,7 @@ export type Market = {
   market_id: number | string;
   title: string;
   description: string;
-  deadline: number;
+  deadline: number | string;
   status: string;
   yes_pool: number | string;
   no_pool: number | string;
@@ -24,6 +24,40 @@ export function formatGen(value: number | string | bigint | undefined) {
   const whole = bigintValue / BigInt(10 ** 18);
   const fraction = (bigintValue % BigInt(10 ** 18)).toString().padStart(18, "0").slice(0, 4);
   return `${whole}.${fraction} GEN`;
+}
+
+export function getDeadlineDate(deadline: Market["deadline"]) {
+  if (typeof deadline === "number") {
+    return new Date(deadline > 10_000_000_000 ? deadline : deadline * 1000);
+  }
+
+  if (/^\d+$/.test(deadline)) {
+    const numeric = Number(deadline);
+    return new Date(numeric > 10_000_000_000 ? numeric : numeric * 1000);
+  }
+
+  return new Date(deadline);
+}
+
+export function formatDeadline(deadline: Market["deadline"]) {
+  const date = getDeadlineDate(deadline);
+  if (Number.isNaN(date.getTime())) return "Unknown deadline";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZoneName: "short",
+  }).format(date);
+}
+
+export function isDeadlinePassed(deadline: Market["deadline"]) {
+  const date = getDeadlineDate(deadline);
+  return !Number.isNaN(date.getTime()) && date.getTime() <= Date.now();
+}
+
+export function getTotalPool(market: Pick<Market, "yes_pool" | "no_pool" | "invalid_pool" | "total_pool">) {
+  const totalPool = BigInt(market.total_pool ?? 0);
+  if (totalPool > BigInt(0)) return totalPool;
+  return BigInt(market.yes_pool ?? 0) + BigInt(market.no_pool ?? 0) + BigInt(market.invalid_pool ?? 0);
 }
 
 export async function callContract<T>(method: ContractViewMethod, args: unknown[] = []): Promise<T> {
