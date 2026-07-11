@@ -5,7 +5,10 @@ Deployment date: 2026-07-10
 ## Frontend
 
 - Live app: https://truthmarket-beta.vercel.app
-- Latest production deployment: https://truthmarket-db4b2pzrj-mr-albert-s-projects.vercel.app
+- Latest production deployment: https://truthmarket-jm73uuq2e-mr-albert-s-projects.vercel.app
+- Latest premium UI commit: `6248d48` (`style: add premium TruthMarket interface`)
+- Premium UI deployment recorded for the public alias.
+- Live page verification passed: `curl -I https://truthmarket-beta.vercel.app` returned `HTTP/2 200`, and the live HTML included `TruthMarket`, `Markets settled by evidence`, `Bradbury`, `Market #3`, `Explore Markets`, and `Create Market`.
 
 ## Contract
 
@@ -69,7 +72,16 @@ Observed `list_markets` output:
 []
 ```
 
-No markets existed yet on the current v3 contract at the time of the proof. A full v3 smoke test is not complete yet.
+No markets existed yet on the current v3 contract at the time of the initial read proof.
+
+## Current v3 Smoke-Test Proof
+
+Market #3 phase 1 smoke proof on the current v3 contract:
+
+- `create_market` accepted.
+- `stake` accepted.
+- `submit_evidence` accepted.
+- Resolution is pending until after the market deadline.
 
 ## v3 Smoke-Test Guidance
 

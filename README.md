@@ -215,7 +215,10 @@ The example environment points at the current Bradbury v3 deployment.
 ## Deployment
 
 - Live app: https://truthmarket-beta.vercel.app
-- Latest production deployment: https://truthmarket-db4b2pzrj-mr-albert-s-projects.vercel.app
+- Latest production deployment: https://truthmarket-jm73uuq2e-mr-albert-s-projects.vercel.app
+- Latest premium UI commit: `6248d48` (`style: add premium TruthMarket interface`)
+- Premium UI deployment recorded for the public alias.
+- Live page verification passed: `curl -I https://truthmarket-beta.vercel.app` returned `HTTP/2 200`, and the live HTML included `TruthMarket`, `Markets settled by evidence`, `Bradbury`, `Market #3`, `Explore Markets`, and `Create Market`.
 
 Do not paste private keys into chat or commit them to the repo. Read the deployer key into your local shell without echoing it:
 
@@ -231,6 +234,8 @@ unset GENLAYER_DEPLOYER_PK
 ```
 
 The current Bradbury v3 deployment was accepted at `0xa7105D2A409b769B62a456E1d57B1210B875cEA5`. The previous v2 deployment at `0x5967EF9AfaCF174B903956Fc60C7e5674eD8e791` and previous v1 deployment at `0x82da95Ce69eb05d3CE3443F3D134D47dACFa036c` are historical.
+
+Market #3 phase 1 smoke proof on the current v3 contract: create, stake, and evidence were accepted. Resolution remains pending until after the market deadline.
 
 ## Transaction Diagnostics
 
