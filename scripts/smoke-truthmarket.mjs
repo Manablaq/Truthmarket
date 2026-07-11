@@ -17,6 +17,15 @@ const MIN_DEADLINE_LEAD_MS = 2 * 60 * 60 * 1000;
 const EXPECTED_EXECUTION_RESULT_NAME = "FINISHED_WITH_RETURN";
 const TRUTHMARKET_APP_URL = "https://truthmarket-beta.vercel.app";
 const TRUTHMARKET_REPO_URL = "https://github.com/Manablaq/Truthmarket";
+const BRADBURY_HEALTH_URL = "https://rpc-bradbury.genlayer.com/health";
+
+class TransientReadBodyError extends Error {
+  constructor(message, body) {
+    super(message);
+    this.name = "TransientReadBodyError";
+    this.body = body;
+  }
+}
 
 function stringifyBigInt(value) {
   return JSON.stringify(
@@ -25,15 +34,6 @@ function stringifyBigInt(value) {
       typeof currentValue === "bigint" ? currentValue.toString() : currentValue,
     2,
   );
-}
-
-function parseJsonReturn(value) {
-  if (typeof value !== "string") return value;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
 }
 
 function compactIso(date) {
@@ -92,6 +92,44 @@ function isTransientReadRpcError(error) {
   return isTransientReadRpcText(errorText(error));
 }
 
+function isObviousGatewayBody(value) {
+  const trimmed = value.trim();
+  const lowerText = value.toLowerCase();
+  return (
+    trimmed.startsWith("<") ||
+    lowerText.includes("<!doctype") ||
+    lowerText.includes("<html") ||
+    lowerText.includes("bad gateway") ||
+    lowerText.includes("gateway timeout") ||
+    lowerText.includes("service unavailable")
+  );
+}
+
+function parseMarketsRead(raw) {
+  if (Array.isArray(raw)) return raw;
+
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+      throw new Error(`list_markets returned parsed non-array data: ${stringifyBigInt(parsed)}`);
+    } catch (error) {
+      if (error instanceof SyntaxError && isObviousGatewayBody(raw)) {
+        throw new TransientReadBodyError(
+          `Bradbury read returned a transient invalid/non-JSON gateway body: ${raw.slice(0, 500)}`,
+          raw,
+        );
+      }
+      if (error instanceof SyntaxError) {
+        throw new Error(`list_markets returned malformed contract JSON: ${raw.slice(0, 500)}`);
+      }
+      throw error;
+    }
+  }
+
+  throw new Error(`list_markets returned non-array data: ${stringifyBigInt(raw)}`);
+}
+
 function extractHashes(error) {
   return [...new Set(errorText(error).match(TX_HASH_PATTERN) ?? [])];
 }
@@ -138,13 +176,7 @@ async function readContractWithRetries(label, params) {
 
   for (let attempt = 0; attempt <= READ_RETRY_DELAYS_MS.length; attempt += 1) {
     try {
-      const result = await client.readContract(params);
-      if (typeof result === "string" && isTransientReadRpcText(result)) {
-        throw new Error(
-          `Bradbury read returned transient invalid/non-JSON response: ${result.slice(0, 500)}`,
-        );
-      }
-      return result;
+      return await client.readContract(params);
     } catch (error) {
       lastError = error;
       if (!isTransientReadRpcError(error) || attempt >= READ_RETRY_DELAYS_MS.length) {
@@ -170,17 +202,51 @@ async function readContractWithRetries(label, params) {
 }
 
 async function readMarkets(label, contractAddress) {
-  const raw = await readContractWithRetries(label, {
-    address: contractAddress,
-    functionName: "list_markets",
-    args: [],
-    stateStatus: "accepted",
-  });
-  const parsed = parseJsonReturn(raw);
-  if (!Array.isArray(parsed)) {
-    throw new Error(`list_markets returned non-array data: ${stringifyBigInt(parsed)}`);
+  let lastError;
+
+  for (let attempt = 0; attempt <= READ_RETRY_DELAYS_MS.length; attempt += 1) {
+    const raw = await readContractWithRetries(label, {
+      address: contractAddress,
+      functionName: "list_markets",
+      args: [],
+      stateStatus: "accepted",
+    });
+
+    try {
+      return parseMarketsRead(raw);
+    } catch (error) {
+      lastError = error;
+      if (!(error instanceof TransientReadBodyError) || attempt >= READ_RETRY_DELAYS_MS.length) {
+        break;
+      }
+
+      const delayMs = READ_RETRY_DELAYS_MS[attempt];
+      console.log(
+        `RPC read retrying: ${label} after ${Math.round(delayMs / 1000)}s because Bradbury returned a transient invalid/non-JSON gateway body.`,
+      );
+      await sleep(delayMs);
+    }
   }
-  return parsed;
+
+  fail(`RPC read failed: ${label}.`, errorText(lastError));
+}
+
+async function warnOnBradburyHealth() {
+  try {
+    const response = await fetch(BRADBURY_HEALTH_URL);
+    const body = await response.json();
+    if (body?.status === "up") {
+      console.log(`Bradbury health: ${body.status}`);
+      return;
+    }
+    console.warn(
+      `Warning: Bradbury /health did not report status "up": ${stringifyBigInt(body)}`,
+    );
+  } catch (error) {
+    console.warn(
+      `Warning: Bradbury /health preflight failed; continuing smoke test. ${errorText(error)}`,
+    );
+  }
 }
 
 async function submitWithBackpressureRetries(label, operation) {
@@ -316,6 +382,7 @@ console.log("TruthMarket Bradbury smoke test");
 console.log(`contract: ${contractAddress}`);
 console.log(`deadline: ${deadline}`);
 
+await warnOnBradburyHealth();
 const existingMarkets = await readMarkets("initial list_markets", contractAddress);
 const existingIds = new Set(existingMarkets.map((market) => String(market.market_id ?? "")));
 
