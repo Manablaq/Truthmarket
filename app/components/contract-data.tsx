@@ -3,20 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { isContractConfigured } from "@/lib/config";
 import type { ContractViewMethod } from "@/lib/genlayer";
-
-export type Market = {
-  market_id: number | string;
-  title: string;
-  description: string;
-  deadline: number | string;
-  status: string;
-  yes_pool: number | string;
-  no_pool: number | string;
-  invalid_pool: number | string;
-  total_pool: number | string;
-  evidence_count: number | string;
-  resolution_id: number | string;
-};
+import { parseAndGuard,type Market } from "@/lib/schemas";
+export type {Market} from "@/lib/schemas";
 
 export function formatGen(value: number | string | bigint | undefined) {
   if (value == null) return "0 GEN";
@@ -27,10 +15,6 @@ export function formatGen(value: number | string | bigint | undefined) {
 }
 
 export function getDeadlineDate(deadline: Market["deadline"]) {
-  if (typeof deadline === "number") {
-    return new Date(deadline > 10_000_000_000 ? deadline : deadline * 1000);
-  }
-
   if (/^\d+$/.test(deadline)) {
     const numeric = Number(deadline);
     return new Date(numeric > 10_000_000_000 ? numeric : numeric * 1000);
@@ -68,14 +52,7 @@ export async function callContract<T>(method: ContractViewMethod, args: unknown[
   });
   const body = await response.json();
   if (!response.ok || !body.ok) throw new Error(body.error || "Contract read failed");
-  if (typeof body.result === "string") {
-    try {
-      return JSON.parse(body.result) as T;
-    } catch {
-      return body.result as T;
-    }
-  }
-  return body.result as T;
+  return parseAndGuard(method,body.result) as T;
 }
 
 export function useContractRead<T>(method: ContractViewMethod, args: unknown[] = []) {

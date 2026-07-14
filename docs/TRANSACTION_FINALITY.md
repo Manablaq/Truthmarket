@@ -1,0 +1,15 @@
+# Transaction finality
+
+All seven writes share `PREPARATION`, `CLIENT_INITIALIZATION`, `NETWORK_VERIFICATION`, `WALLET_SUBMISSION`, and `HASH_VALIDATION`. A synchronous lock blocks duplicates. Stake preserves parsed GEN as payable wei. Errors are bounded/redacted and report stage plus provider code; failures preserve form fields and are never automatically resubmitted.
+
+Only a strict transaction hash creates browser-local Activity. Each meaningful transition is an immutable journal entry whose key includes chain, contract, wallet, hash, and a unique event ID. Every entry contains a complete validated snapshot; current Activity is derived per hash by protocol strength, normalized receipt fingerprint, revision, and a final stable tie-breaker. Finalized success therefore cannot be erased by a later weaker entry. Older pre-journal Activity records are intentionally ignored and may no longer appear.
+
+Activity records revisions, update timestamps, `pollingState`, and `pollingStoppedAt`. Polling moves through `IDLE`, `ACTIVE`, `PAUSED`, and `TERMINAL`. A bounded window that ends without a terminal receipt persists `PAUSED` and a safe warning while preserving the strongest protocol phase. One bounded startup/reconnect recovery window and the explicit dashboard “Retry polling only” action may start polling. Storage events update derived display state only; they never start or resume a monitor. Nothing in recovery submits or resubmits a transaction.
+
+When available, the Web Locks API coordinates nonblocking per-hash monitor ownership so another tab can display journal updates without duplicating polling. It may also serialize journal appends, but journal correctness does not depend on locks: browsers without Web Locks use immutable entries and at most one bounded startup monitor per tab. Browser storage does not provide protocol or database-grade transactional guarantees, so Activity remains convenience data rather than protocol evidence.
+
+The monitor uses `genlayer-js` `getTransaction({ hash })` and consumes its normalized `statusName`, `resultName`, and `txExecutionResultName` fields. It distinguishes submitted, confirmation/accepted, ready to finalize, finalized success, execution failure, canceled, timeout, no majority, disagreement/failure, undetermined, and retryable unknown polling error. `ACCEPTED` and `READY_TO_FINALIZE` are nonterminal. Protocol success requires exactly `FINALIZED` and `FINISHED_WITH_RETURN`.
+
+If a valid hash is returned but browser storage fails, the interface still reports submission and links the hash immediately. Storage failure is a separate warning and is not an invitation to resubmit.
+
+After confirmed finalization, action-specific accepted-state reads may compare preserved creation fields, position/pools, evidence count, resolution, challenges, finalized market status, or claim/leaderboard state. They are supplementary only and cannot override protocol finality. If a created market ID cannot be derived exactly, the check is unavailable rather than guessed.
