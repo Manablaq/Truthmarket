@@ -1,7 +1,9 @@
+export const DEFAULT_TRUTHMARKET_CONTRACT_ADDRESS = "0xa7105D2A409b769B62a456E1d57B1210B875cEA5";
 export const TRUTHMARKET_CONTRACT_ADDRESS =
-  process.env.NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS?.trim() ?? "";
+  process.env.NEXT_PUBLIC_TRUTHMARKET_CONTRACT_ADDRESS?.trim() || DEFAULT_TRUTHMARKET_CONTRACT_ADDRESS;
 
 export const BRADBURY_CHAIN_ID = 4221;
+export const BRADBURY_CHAIN_ID_HEX = "0x107d";
 export const BRADBURY_RPC = "https://rpc-bradbury.genlayer.com";
 export const BRADBURY_EXPLORER = "https://explorer-bradbury.genlayer.com";
 

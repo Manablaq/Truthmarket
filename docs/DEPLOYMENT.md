@@ -5,10 +5,10 @@ Deployment date: 2026-07-10
 ## Frontend
 
 - Live app: https://truthmarket-beta.vercel.app
-- Latest production deployment: https://truthmarket-jm73uuq2e-mr-albert-s-projects.vercel.app
+- Historical immutable Vercel deployment URL: https://truthmarket-jm73uuq2e-mr-albert-s-projects.vercel.app (this URL may require Vercel authentication and is not cited as publicly verifiable)
 - Latest premium UI commit: `6248d48` (`style: add premium TruthMarket interface`)
-- Premium UI deployment recorded for the public alias.
-- Live page verification passed: `curl -I https://truthmarket-beta.vercel.app` returned `HTTP/2 200`, and the live HTML included `TruthMarket`, `Markets settled by evidence`, `Bradbury`, `Market #3`, `Explore Markets`, and `Create Market`.
+- Premium UI deployment recorded for the public production alias `https://truthmarket-beta.vercel.app`.
+- Historical frontend availability check on 2026-07-10: `curl -I https://truthmarket-beta.vercel.app` returned `HTTP/2 200`. The content observed then is not evidence of the current frontend or protocol finality.
 
 ## Contract
 
@@ -74,14 +74,19 @@ Observed `list_markets` output:
 
 No markets existed yet on the current v3 contract at the time of the initial read proof.
 
-## Current v3 Smoke-Test Proof
+## Historical V3 accepted-state smoke record — observed 2026-07-11
 
-Market #3 phase 1 smoke proof on the current v3 contract:
+> This record demonstrates accepted-state create, stake, and evidence observations only. `ACCEPTED` is nonterminal and is not protocol finality proof. No preserved V3 proof exists here for resolution, challenge, finalization, or claims.
 
-- `create_market` accepted.
-- `stake` accepted.
-- `submit_evidence` accepted.
-- Resolution is pending until after the market deadline.
+Market #3 was observed through accepted-state contract reads on the V3 contract:
+
+- The created market was visible in accepted state.
+- A 0.001 GEN stake was visible as escrowed in the market pool; this observation does not prove the transaction reached `FINALIZED`.
+- Submitted evidence was visible in accepted state.
+- The market remained `OPEN` and unresolved.
+- The complete lifecycle remained unverified.
+
+Transaction success must be established separately from a receipt showing both `FINALIZED` and `FINISHED_WITH_RETURN`. `ACCEPTED` and `FINALIZED` are never interchangeable.
 
 ## v3 Smoke-Test Guidance
 
@@ -96,7 +101,7 @@ Market #3 phase 1 smoke proof on the current v3 contract:
 - Bradbury can reject `eth_sendRawTransaction` before any EVM wrapper tx hash or GenLayer consensus tx id exists with `Node is not currently accepting transactions: pipeline backpressure (l1_sender_commit)`. That is RPC/node backpressure, not proof of a contract error. The smoke script retries only that pre-hash case with 15s, 30s, 60s, and 120s backoff.
 - If an error includes an EVM wrapper tx hash, inspect it with `npm run inspect:evm-wrapper -- <hash>` instead of retrying blindly.
 - If a GenLayer consensus tx hash exists but does not accept, inspect it with `npm run inspect:tx -- <hash>` instead of retrying blindly.
-- `writeContract` returns a transaction hash; state is not instant. Waits and diagnostics must use `ACCEPTED` or `FINALIZED` state before relying on contract state.
+- `writeContract` returns a transaction hash; state is not instant. Use accepted-state contract reads as supplementary observations only. Establish transaction success separately from a receipt showing `FINALIZED` and `FINISHED_WITH_RETURN`.
 - Payable writes, including stake, pass `value` in wei.
 - Run create, stake, and evidence submission before the deadline. Run `resolve_market` only after the deadline has passed.
 - Do not use 4-minute or 5-minute smoke-test deadlines; they can expire while the transaction is still pending/proposing.

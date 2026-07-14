@@ -1,57 +1,45 @@
 "use client";
 
 import { use, useState } from "react";
-import { useAccount } from "wagmi";
-import { parseEther } from "viem";
-import { EmptyState, Field, Panel, Section, StatCard, StatusPill, TxStatus, inputClass, marketBadges } from "../../components/chrome";
-import { formatDeadline, formatGen, getTotalPool, isDeadlinePassed, type Market, useContractRead } from "../../components/contract-data";
+import { EmptyState, Field, Panel, Section, StatCard, StatusPill, TxStatus,V3Warning,inputClass, marketBadges } from "../../components/chrome";
+import { callContract,formatDeadline, formatGen, getTotalPool, isDeadlinePassed, type Market, useContractRead } from "../../components/contract-data";
+import type { Position } from "@/lib/schemas";
 import { BRADBURY_EXPLORER, TRUTHMARKET_CONTRACT_ADDRESS, isContractConfigured } from "@/lib/config";
-import { describeTransactionStatus, waitForAccepted, writeTruthMarket } from "@/lib/genlayer";
-
-type Evidence = { evidence_id: number | string; url: string; note: string; submitter: string; submitted_at: number | string };
-type Resolution = {
-  verdict: string;
-  confidence: string;
-  reasoning: string;
-  accepted_sources: string[];
-  rejected_sources: { url: string; reason: string }[];
-  risk_flags: string[];
-};
-type Challenge = { challenge_id: number | string; evidence_url: string; reason: string; challenger: string };
+import { useWallet } from "../../components/wallet-provider";
+import { failureDetails,monitorActivity,submitTransaction,type WriteMethod } from "@/lib/transactions";
+import type { Evidence,Resolution,Challenge } from "@/lib/schemas";
+import { postFinalizationCheck } from "@/lib/post-checks";
+import { parseGen } from "@/lib/units";
 
 export default function MarketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { address } = useAccount();
+  const { account,selected } = useWallet();
+  const [submitting,setSubmitting]=useState(false);
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"info" | "success" | "error">("info");
+  const [submittedHash,setSubmittedHash]=useState<string>();
   const market = useContractRead<Market>("get_market", [id]);
   const evidence = useContractRead<Evidence[]>("list_evidence", [id]);
   const resolution = useContractRead<Resolution>("get_resolution", [id]);
   const challenges = useContractRead<Challenge[]>("list_challenges", [id]);
 
-  async function send(functionName: Parameters<typeof writeTruthMarket>[0]["functionName"], args: unknown[], value = "0") {
+  async function send(functionName: WriteMethod, args: unknown[], value = "0") {
     setMessageKind("info");
-    setMessage(describeTransactionStatus("submitted"));
+    setMessage("PREPARATION");setSubmitting(true);
     try {
-      if (!address || typeof window === "undefined" || !window.ethereum) throw new Error("Connect a wallet first.");
-      const hash = await writeTruthMarket({ account: address, provider: window.ethereum, functionName, args, value: parseEther(value) });
-      setMessage(`${describeTransactionStatus("txid")}. Hash: ${hash}`);
-      try {
-        await Promise.race([
-          waitForAccepted(hash as Parameters<typeof waitForAccepted>[0]),
-          new Promise((_, reject) => setTimeout(() => reject(new Error("acceptance-timeout")), 45_000)),
-        ]);
-        setMessageKind("success");
-        setMessage(`${describeTransactionStatus("accepted")}. Hash: ${hash}`);
-        await Promise.all([market.refetch(), evidence.refetch(), resolution.refetch(), challenges.refetch()]);
-      } catch (acceptedError) {
-        if (acceptedError instanceof Error && acceptedError.message === "acceptance-timeout") return;
-        throw acceptedError;
-      }
+      if (!account||!selected) throw new Error("Connect a wallet first.");
+      const submitted={side:String(args[1]??"")};
+      let positionAmount="0";if(functionName==="stake"){const position=await callContract<Position>("get_user_position",[id,account]);positionAmount=position.amount}
+      const poolKey=`${submitted.side.toLowerCase()}_pool` as keyof Market;
+      const before={evidenceCount:currentMarket?.evidence_count??"0",challengeCount:String(challenges.data?.length??0),positionAmount,pool:typeof currentMarket?.[poolKey]==="string"?currentMarket[poolKey] as string:"0"};
+      const result=await submitTransaction({account,provider:selected.provider,action:functionName.replaceAll("_"," "),method:functionName,args,value:parseGen(value),marketId:id,storage:window.localStorage,onStage:setMessage});
+      setSubmittedHash(result.transactionHash);
+      setMessageKind("success");setMessage(`Submitted to Bradbury consensus; accepted is nonterminal.${result.storageWarning?` ${result.storageWarning.message} Do not submit again.`:""}`);
+      void monitorActivity(result.activity,{storage:window.localStorage,supplementary:()=>postFinalizationCheck({method:functionName,marketId:id,account,submitted,before})});
     } catch (error) {
       setMessageKind("error");
-      setMessage(error instanceof Error ? error.message : "Transaction failed");
-    }
+      const failure=failureDetails(error);setMessage(`${failure.stage}: ${failure.message}${failure.providerCode!==undefined?` (provider code ${failure.providerCode})`:""}`);
+    }finally{setSubmitting(false)}
   }
 
   async function stake(formData: FormData) {
@@ -82,6 +70,8 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
   if (!isContractConfigured()) {
     return (
       <Section>
+        <V3Warning />
+        <div className="h-6" />
         <EmptyState title="Contract not deployed yet">Market detail reads and writes are unavailable until deployment.</EmptyState>
       </Section>
     );
@@ -155,7 +145,7 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
               ))}
             </Panel>
             <Panel title="Resolution" eyebrow="No finality claim before contract finality">
-              {resolution.data ? (
+              {resolution.data?.found ? (
                 <div className="space-y-3 text-sm text-white/65">
                   <p className="text-lg font-semibold text-white">{resolution.data.verdict} / {resolution.data.confidence}</p>
                   <p className="leading-6">{resolution.data.reasoning}</p>
@@ -192,10 +182,10 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
                 <Field label="Amount" helper="Amount is paid in GEN and sent with the stake transaction.">
                   <input name="amount" inputMode="decimal" placeholder="0.001" className={inputClass} />
                 </Field>
-                <button className="rounded-md bg-amber-300 px-4 py-3 text-sm font-semibold text-black hover:bg-amber-200">Submit stake</button>
+                <button disabled={submitting} className="rounded-md bg-amber-300 px-4 py-3 text-sm font-semibold text-black hover:bg-amber-200 disabled:opacity-40">Submit stake</button>
               </form>
             </Panel>
-            <Panel title="Submit evidence" eyebrow="Source-backed updates">
+            <Panel title="Submit evidence" eyebrow="Unverified URL and note">
               <form action={submitEvidence} className="grid gap-3">
                 <Field label="Source URL">
                   <input name="url" required type="url" placeholder="https://source.example/article" className={inputClass} />
@@ -203,19 +193,21 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
                 <Field label="Evidence note" helper="Explain what the source proves or disproves.">
                   <textarea name="note" required rows={4} placeholder="Why this source matters" className={inputClass} />
                 </Field>
-                <button className="rounded-md border border-white/16 px-4 py-3 text-sm font-semibold text-white hover:bg-white/8">Submit evidence</button>
+                <button disabled={submitting} className="rounded-md border border-white/16 px-4 py-3 text-sm font-semibold text-white hover:bg-white/8 disabled:opacity-40">Submit evidence</button>
               </form>
             </Panel>
             <Panel title="Resolution actions" eyebrow="Deadline gated">
+              <V3Warning action />
+              <div className="h-3" />
               {!deadlinePassed && (
                 <p className="mb-3 rounded-md border border-white/10 bg-black/20 p-3 text-sm leading-6 text-white/56">
                   Resolve is disabled until the market deadline passes.
                 </p>
               )}
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                <button disabled={!deadlinePassed} onClick={() => send("resolve_market", [id])} className="rounded-md border border-amber-300/35 px-3 py-3 text-xs font-semibold text-amber-100 hover:bg-amber-300/10 disabled:cursor-not-allowed disabled:opacity-40">Resolve</button>
-                <button onClick={() => send("finalize_market", [id])} className="rounded-md border border-white/16 px-3 py-3 text-xs font-semibold text-white hover:bg-white/8">Finalize</button>
-                <button onClick={() => send("claim_winnings", [id])} className="rounded-md border border-white/16 px-3 py-3 text-xs font-semibold text-white hover:bg-white/8">Claim</button>
+                <button disabled={!deadlinePassed||submitting} onClick={() => send("resolve_market", [id])} className="rounded-md border border-amber-300/35 px-3 py-3 text-xs font-semibold text-amber-100 hover:bg-amber-300/10 disabled:cursor-not-allowed disabled:opacity-40">Resolve</button>
+                <button disabled={submitting} onClick={() => send("finalize_market", [id])} className="rounded-md border border-white/16 px-3 py-3 text-xs font-semibold text-white hover:bg-white/8 disabled:opacity-40">Finalize</button>
+                <button disabled={submitting} onClick={() => send("claim_winnings", [id])} className="rounded-md border border-white/16 px-3 py-3 text-xs font-semibold text-white hover:bg-white/8 disabled:opacity-40">Claim</button>
               </div>
               <form action={challenge} className="mt-3 grid gap-3">
                 <Field label="Challenge source">
@@ -224,10 +216,11 @@ export default function MarketDetailPage({ params }: { params: Promise<{ id: str
                 <Field label="Challenge reason">
                   <textarea name="reason" required rows={3} placeholder="Challenge reason" className={inputClass} />
                 </Field>
-                <button className="rounded-md border border-amber-300/40 px-4 py-3 text-sm font-semibold text-amber-100 hover:bg-amber-300/10">Challenge accepted resolution</button>
+                <button disabled={submitting} className="rounded-md border border-amber-300/40 px-4 py-3 text-sm font-semibold text-amber-100 hover:bg-amber-300/10 disabled:opacity-40">Challenge accepted resolution</button>
               </form>
             </Panel>
             <TxStatus message={message} kind={messageKind} />
+            {submittedHash&&<a className="break-all text-xs text-amber-100 underline" href={`${BRADBURY_EXPLORER}/tx/${submittedHash}`} target="_blank" rel="noreferrer">View submitted transaction: {submittedHash}</a>}
           </div>
         </div>
       </Section>

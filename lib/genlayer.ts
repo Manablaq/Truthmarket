@@ -1,8 +1,9 @@
 import { createClient } from "genlayer-js";
 import { testnetBradbury } from "genlayer-js/chains";
-import { ExecutionResult, TransactionStatus, type CalldataEncodable, type Hash } from "genlayer-js/types";
+import { TransactionHashVariant, type CalldataEncodable, type GenLayerTransaction, type Hash } from "genlayer-js/types";
 import type { Address } from "viem";
-import { TRUTHMARKET_CONTRACT_ADDRESS, isContractConfigured } from "./config";
+import { TRUTHMARKET_CONTRACT_ADDRESS, isContractConfigured } from "./config.ts";
+import type { Eip1193Provider } from "./wallet.ts";
 
 export type ContractViewMethod =
   | "get_market"
@@ -39,11 +40,11 @@ export function getReadClient() {
   return createClient({ chain: testnetBradbury });
 }
 
-export function getWriteClient(account: Address, provider: unknown) {
+export function getWriteClient(account: Address, provider: Eip1193Provider) {
   return createClient({
     chain: testnetBradbury,
     account,
-    provider: provider as never,
+    provider,
   });
 }
 
@@ -59,13 +60,13 @@ export async function readTruthMarket(
     address: TRUTHMARKET_CONTRACT_ADDRESS as Address,
     functionName,
     args: args as CalldataEncodable[],
-    stateStatus: "accepted",
-  } as never);
+    transactionHashVariant: TransactionHashVariant.LATEST_NONFINAL,
+  });
 }
 
 export async function writeTruthMarket(options: {
   account: Address;
-  provider: unknown;
+  provider: Eip1193Provider;
   functionName: (typeof WRITE_METHODS)[number];
   args?: unknown[];
   value?: bigint;
@@ -74,10 +75,7 @@ export async function writeTruthMarket(options: {
     throw new Error("TruthMarket contract is not deployed or configured yet.");
   }
 
-  const client = getWriteClient(options.account, options.provider);
-  await client.connect("testnetBradbury");
-
-  return client.writeContract({
+  return getWriteClient(options.account, options.provider).writeContract({
     address: TRUTHMARKET_CONTRACT_ADDRESS as Address,
     functionName: options.functionName,
     args: (options.args ?? []) as CalldataEncodable[],
@@ -85,18 +83,13 @@ export async function writeTruthMarket(options: {
   });
 }
 
-export async function waitForAccepted(hash: Hash) {
-  return getReadClient().waitForTransactionReceipt({
-    hash,
-    status: TransactionStatus.ACCEPTED,
-  });
+export function toTransactionHash(value: string): Hash {
+  if (!/^0x[a-fA-F0-9]{64}$/.test(value)) throw new Error("Invalid transaction hash");
+  return value as Hash;
 }
 
-export async function waitForFinalized(hash: Hash) {
-  return getReadClient().waitForTransactionReceipt({
-    hash,
-    status: TransactionStatus.FINALIZED,
-  });
+export async function getTransactionState(hash: string): Promise<GenLayerTransaction> {
+  return getReadClient().getTransaction({ hash: toTransactionHash(hash) });
 }
 
 export function describeTransactionStatus(
@@ -119,8 +112,4 @@ export function parseResult<T = unknown>(result: unknown): T | null {
     }
   }
   return result as T;
-}
-
-export function wasExecutionSuccessful(receipt: { txExecutionResultName?: string }) {
-  return receipt.txExecutionResultName === ExecutionResult.FINISHED_WITH_RETURN;
 }

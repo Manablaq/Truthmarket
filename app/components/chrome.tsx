@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useConnect, useConnection, useDisconnect } from "wagmi";
-import type { Market } from "./contract-data";
+import { useWallet } from "./wallet-provider";
+import type { Market } from "@/lib/schemas";
+import { BRADBURY_EXPLORER } from "@/lib/config";
 import { formatDeadline, formatGen, getTotalPool, isDeadlinePassed } from "./contract-data";
 
 type StatusTone = "amber" | "blue" | "green" | "red" | "neutral";
@@ -42,33 +43,26 @@ export function Header() {
 }
 
 function WalletButton() {
-  const connection = useConnection();
-  const { connectors, connect, isPending } = useConnect();
-  const { disconnect } = useDisconnect();
-  const injected = connectors.find((connector) => connector.type === "injected") ?? connectors[0];
+  const {account,connect,disconnect,selected,connectionPending,sessionError,discoveryState}=useWallet();
 
-  if (connection.isConnected && connection.address) {
-    const label = `${connection.address.slice(0, 6)}...${connection.address.slice(-4)}`;
-    return (
-      <button
-        type="button"
-        onClick={() => disconnect()}
-        className="border border-amber-300/35 bg-amber-300/10 px-3 py-2 text-sm font-medium text-amber-100 hover:bg-amber-300/15"
-      >
-        {label}
-      </button>
-    );
+  if (account) {
+    const label = `${account.slice(0, 6)}...${account.slice(-4)}`;
+    return <div><button type="button" onClick={disconnect} title={`Disconnect this TruthMarket session from ${selected?.info.name ?? "wallet"}; extension permissions are unchanged.`} className="border border-amber-300/35 bg-amber-300/10 px-3 py-2 text-sm font-medium text-amber-100 hover:bg-amber-300/15">{label}</button>{sessionError&&<p role="alert" className="absolute right-5 mt-2 max-w-xs rounded bg-red-950 p-2 text-xs text-red-100">{sessionError}</p>}</div>;
   }
 
   return (
-    <button
-      type="button"
-      disabled={!injected || isPending}
-      onClick={() => injected && connect({ connector: injected })}
-      className="border border-white/16 px-3 py-2 text-sm font-medium text-white hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-45"
-    >
-      {isPending ? "Connecting" : "Connect wallet"}
-    </button>
+    <div>
+      <button
+        type="button"
+        disabled={connectionPending||discoveryState==="DISCOVERING"}
+        onClick={()=>{void connect()}}
+        className="border border-white/16 px-3 py-2 text-sm font-medium text-white hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        {discoveryState==="DISCOVERING"?"Discovering injected wallets…":connectionPending ? "Connecting" : "Connect wallet"}
+      </button>
+      <span role="status" aria-live="polite" className="sr-only">{discoveryState==="DISCOVERING"?"Discovering injected wallets…":connectionPending?"Wallet connection request pending.":"Wallet discovery complete."}</span>
+      {sessionError&&<p role="alert" className="absolute right-5 mt-2 max-w-xs rounded bg-red-950 p-2 text-xs text-red-100">{sessionError}</p>}
+    </div>
   );
 }
 
@@ -157,8 +151,9 @@ export function TxStatus({ message, kind = "info" }: { message: string; kind?: "
   if (!message) return null;
   const tone = kind === "error" ? "border-red-300/25 bg-red-300/10 text-red-100" : kind === "success" ? "border-emerald-300/25 bg-emerald-300/10 text-emerald-100" : "border-sky-300/25 bg-sky-300/10 text-sky-100";
   return (
-    <div className={`rounded-lg border p-4 text-sm leading-6 ${tone}`}>
+    <div role={kind==="error"?"alert":"status"} aria-live="polite" className={`rounded-lg border p-4 text-sm leading-6 ${tone}`}>
       {message}
+      {message.match(/0x[a-fA-F0-9]{64}/)?.[0]&&<a className="ml-2 underline" href={`${BRADBURY_EXPLORER}/tx/${message.match(/0x[a-fA-F0-9]{64}/)?.[0]}`} target="_blank" rel="noreferrer">Open transaction</a>}
       {kind === "error" && (
         <p className="mt-2 text-xs leading-5 text-white/58">
           Inspect the transaction in the Bradbury explorer or run the local inspect script with the tx hash when available.
@@ -167,6 +162,7 @@ export function TxStatus({ message, kind = "info" }: { message: string; kind?: "
     </div>
   );
 }
+export function V3Warning({action=false}:{action?:boolean}){return <div className="rounded-lg border border-amber-300/25 bg-amber-300/8 p-4 text-xs leading-5 text-amber-50/80"><strong>V3 limitation:</strong> TruthMarket applies GenLayer AI consensus to user-submitted URL identifiers, explanatory notes, and timestamps. The contract does not fetch or authenticate webpage contents. URLs and notes are unverified claims; accepted is not finalized. {action&&"Challenge evidence is stored but is not included in V3 re-resolution. There is no challenge waiting period."} Funds can remain locked in unresolved edge cases. Bradbury is a testnet, and V3 is not end-to-end verified.</div>}
 
 export function marketBadges(market: Market) {
   const status = String(market.status || "unknown").toUpperCase();

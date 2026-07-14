@@ -1,27 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount } from "wagmi";
-import { parseEther } from "viem";
-import { Card, EmptyState, Field, Panel, Section, StatusPill, TxStatus, inputClass } from "../../components/chrome";
+import { Card, EmptyState, Field, Panel, Section, StatusPill, TxStatus, V3Warning,inputClass } from "../../components/chrome";
 import { BRADBURY_EXPLORER, TRUTHMARKET_CONTRACT_ADDRESS, isContractConfigured } from "@/lib/config";
-import { describeTransactionStatus, writeTruthMarket } from "@/lib/genlayer";
+import { useWallet } from "../../components/wallet-provider";
+import { failureDetails,monitorActivity,submitTransaction } from "@/lib/transactions";
+import { postFinalizationCheck } from "@/lib/post-checks";
 
 const MIN_DEADLINE_LEAD_MS = 60 * 60 * 1000;
 const PREFERRED_DEADLINE_LEAD_MS = 2 * 60 * 60 * 1000;
 const UTC_ISO_SECONDS_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
 export default function CreateMarketPage() {
-  const { address, isConnected } = useAccount();
+  const { account, selected } = useWallet();
+  const [submitting,setSubmitting]=useState(false);
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"info" | "success" | "error">("info");
+  const [submittedHash,setSubmittedHash]=useState<string>();
   const [suggestedDeadline] = useState(() => new Date(Date.now() + PREFERRED_DEADLINE_LEAD_MS).toISOString().replace(/\.\d{3}Z$/, "Z"));
 
   async function submit(formData: FormData) {
     setMessageKind("info");
-    setMessage(describeTransactionStatus("submitted"));
+    setMessage("PREPARATION");setSubmitting(true);
     try {
-      if (!address || typeof window === "undefined" || !window.ethereum) throw new Error("Connect a wallet first.");
+      if (!account || !selected) throw new Error("Connect a wallet first.");
       const rawDeadline = String(formData.get("deadline") || "").trim();
       const title = String(formData.get("title") || "").trim();
       const description = String(formData.get("description") || "").trim();
@@ -45,10 +47,10 @@ export default function CreateMarketPage() {
         throw new Error("Use a deadline at least 2 hours in the future for smoke tests and safer Bradbury acceptance timing.");
       }
       const deadline = deadlineDate.toISOString().replace(/\.\d{3}Z$/, "Z");
-      const hash = await writeTruthMarket({
-        account: address,
-        provider: window.ethereum,
-        functionName: "create_market",
+      const result = await submitTransaction({
+        account,
+        provider: selected.provider,
+        action:"Create market",method: "create_market",
         args: [
           title,
           description,
@@ -57,14 +59,16 @@ export default function CreateMarketPage() {
           invalidRules,
           deadline,
         ],
-        value: parseEther("0"),
+        value: BigInt(0),storage:window.localStorage,onStage:setMessage,
       });
+      setSubmittedHash(result.transactionHash);
       setMessageKind("success");
-      setMessage(`${describeTransactionStatus("txid")}. Hash: ${hash}`);
+      setMessage(`Submitted to Bradbury consensus; acceptance is pending.${result.storageWarning?` ${result.storageWarning.message} Do not submit again.`:""}`);
+      void monitorActivity(result.activity,{storage:window.localStorage,supplementary:()=>postFinalizationCheck({method:"create_market",account,submitted:{title,description,yes_rules:yesRules,no_rules:noRules,invalid_rules:invalidRules,deadline}})});
     } catch (error) {
       setMessageKind("error");
-      setMessage(error instanceof Error ? error.message : "Create transaction failed");
-    }
+      const failure=failureDetails(error);setMessage(`${failure.stage}: ${failure.message}${failure.providerCode!==undefined?` (provider code ${failure.providerCode})`:""}`);
+    }finally{setSubmitting(false)}
   }
 
   return (
@@ -72,6 +76,8 @@ export default function CreateMarketPage() {
       <Section>
         <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div>
+            <V3Warning />
+            <div className="h-5" />
             <StatusPill value="Create a claim market" tone="blue" />
             <h1 className="mt-4 text-5xl font-semibold">Create market</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-white/62">
@@ -126,16 +132,17 @@ export default function CreateMarketPage() {
                 <Field label="Deadline" helper="Second-precision UTC ISO. Example: 2026-07-11T14:30:00Z">
                   <input name="deadline" required type="text" inputMode="text" placeholder={suggestedDeadline} pattern="\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z" className={inputClass} />
                 </Field>
-                <button disabled={!isContractConfigured() || !isConnected} className="rounded-md bg-amber-300 px-4 py-3 text-sm font-semibold text-black hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40">
+                <button disabled={!isContractConfigured() || !account || submitting} className="rounded-md bg-amber-300 px-4 py-3 text-sm font-semibold text-black hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40">
                   Submit create transaction
                 </button>
-                {!isConnected && <p className="text-xs text-white/45">Connect a wallet before submitting.</p>}
+                {!account && <p className="text-xs text-white/45">Connect a wallet before submitting.</p>}
                 {isContractConfigured() && (
                   <a className="text-xs text-amber-100/80 underline-offset-4 hover:underline" href={`${BRADBURY_EXPLORER}/address/${TRUTHMARKET_CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer">
                     Writing to {TRUTHMARKET_CONTRACT_ADDRESS.slice(0, 6)}...{TRUTHMARKET_CONTRACT_ADDRESS.slice(-4)} on Bradbury
                   </a>
                 )}
                 <TxStatus message={message} kind={messageKind} />
+                {submittedHash&&<a className="break-all text-xs text-amber-100 underline" href={`${BRADBURY_EXPLORER}/tx/${submittedHash}`} target="_blank" rel="noreferrer">View submitted transaction: {submittedHash}</a>}
               </form>
             </Panel>
           </div>
