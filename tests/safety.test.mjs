@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 import {execFile} from "node:child_process";
 import {promisify} from "node:util";
+import ts from "typescript";
 import {parseGen,formatGenWei} from "../lib/units.ts";
 import {guardMarket,guardPosition,guardEvidenceList,guardResolution,guardChallenges,guardStats,guardLeaderboard,parseAndGuard} from "../lib/schemas.ts";
 import {validateReadRequest,boundedRead,MAX_READ_ATTEMPTS} from "../lib/api-safety.ts";
@@ -17,6 +18,8 @@ const market={market_id:"1",creator:address,title:"A valid title",description:"A
 function memoryStorage({fail=false}={}){const values=new Map();return{get length(){return values.size},key(i){return [...values.keys()][i]??null},getItem(k){return values.get(k)??null},setItem(k,v){if(fail)throw new Error("quota");values.set(k,v)},values}}
 function activity(overrides={}){const now="2026-07-14T00:00:00.000Z";return{action:"Stake",contractMethod:"stake",marketId:"1",submittedAt:now,updatedAt:now,revision:0,transactionHash:hash,currentPhase:"submitted",terminal:false,pollingState:"IDLE",pollingStoppedAt:null,statusName:null,resultName:null,executionResult:null,safeError:null,supplementaryStateRead:null,chainId:BRADBURY_CHAIN_ID,contractAddress:TRUTHMARKET_CONTRACT_ADDRESS,walletAddress:address,...overrides}}
 const receipt=(statusName,resultName="AGREE",txExecutionResultName="NOT_VOTED")=>({status:99,statusName,resultName,txExecutionResultName});
+
+test("deadline formatting accepts ISO and Unix-seconds deadlines",async()=>{const source=await readFile("app/components/contract-data.tsx","utf8"),compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText,loaded={exports:{}},require=id=>id==="@tanstack/react-query"?{useQuery(){}}:id==="@/lib/config"?{isContractConfigured(){return false}}:id==="@/lib/schemas"?{parseAndGuard(){}}:{};new Function("require","module","exports",compiled)(require,loaded,loaded.exports);for(const deadline of ["2027-01-01T00:00:00Z","1798761600"]){let formatted;assert.doesNotThrow(()=>{formatted=loaded.exports.formatDeadline(deadline)});assert.equal(typeof formatted,"string");assert.ok(formatted.length>0)}});
 
 test("fixed GEN boundaries and unsafe syntax",()=>{assert.equal(parseGen("0"),0n);assert.equal(parseGen("0.000000000000000001"),1n);assert.equal(parseGen("1"),10n**18n);assert.equal(formatGenWei(10n**18n),"1 GEN");for(const value of ["","1e3","+1","-1","NaN","Infinity",".1","1.","0.0000000000000000001"])assert.throws(()=>parseGen(value),value)});
 test("canonical market IDs and exact API args",()=>{assert.deepEqual(validateReadRequest({method:"get_market",args:["1"]}).args,["1"]);for(const id of ["0","01","-1","1.0",1])assert.throws(()=>validateReadRequest({method:"get_market",args:[id]}));assert.throws(()=>validateReadRequest({method:"get_stats",args:["1"]}));assert.throws(()=>validateReadRequest({method:"stake",args:[]}));assert.throws(()=>validateReadRequest({method:"get_market",args:["1"],extra:true}))});
