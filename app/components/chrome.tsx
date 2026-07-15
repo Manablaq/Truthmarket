@@ -1,9 +1,12 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- EIP-6963 icons are extension-provided data URLs. */
 
 import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useWallet } from "./wallet-provider";
 import type { Market } from "@/lib/schemas";
-import { BRADBURY_EXPLORER } from "@/lib/config";
+import { BRADBURY_CHAIN_ID, BRADBURY_EXPLORER } from "@/lib/config";
+import { copyPublicAddress, disclosureIsOpen, providerPresentationName, safeProviderIcon, shortenAddress, walletExplorerUrl, walletNetworkStatusLabel, walletTriggerLabel } from "@/lib/wallet";
 import { formatDeadline, formatGen, getTotalPool, isDeadlinePassed } from "./contract-data";
 
 type StatusTone = "amber" | "blue" | "green" | "red" | "neutral";
@@ -43,24 +46,58 @@ export function Header() {
 }
 
 function WalletButton() {
-  const {account,connect,disconnect,selected,connectionPending,sessionError,discoveryState}=useWallet();
+  const {account,connect,disconnect,switchWallet,selected,connectionPending,sessionError,sessionStatus,networkState,balance,discoveryState}=useWallet();
+  const [disclosure,setDisclosure]=useState<{owner?:string;open:boolean}>({owner:account,open:false}),[copyFeedback,setCopyFeedback]=useState<{owner?:string;status:""|"copied"|"unavailable"}>({owner:account,status:""});
+  const containerRef=useRef<HTMLDivElement>(null),triggerRef=useRef<HTMLButtonElement>(null),connectRef=useRef<HTMLButtonElement>(null),copyTimer=useRef<ReturnType<typeof setTimeout>|undefined>(undefined),previousAccount=useRef(account),currentAccount=useRef(account),switching=useRef(false);
+  const open=disclosureIsOpen(disclosure.owner,account,disclosure.open),copyStatus=copyFeedback.owner===account?copyFeedback.status:"";
+
+  const closeMenu=useCallback((restore=true)=>{setDisclosure({owner:account,open:false});if(restore)requestAnimationFrame(()=>triggerRef.current?.focus())},[account]);
+  useEffect(()=>()=>{if(copyTimer.current)clearTimeout(copyTimer.current)},[]);
+  useEffect(()=>{if(!open)return;const pointer=(event:PointerEvent)=>{if(!containerRef.current?.contains(event.target as Node))closeMenu(false)};const key=(event:KeyboardEvent)=>{if(event.key==="Escape"){event.preventDefault();closeMenu()}};document.addEventListener("pointerdown",pointer);document.addEventListener("keydown",key);return()=>{document.removeEventListener("pointerdown",pointer);document.removeEventListener("keydown",key)}},[open,closeMenu]);
+  useEffect(()=>{currentAccount.current=account;if(previousAccount.current!==account){if(copyTimer.current)clearTimeout(copyTimer.current);queueMicrotask(()=>{setDisclosure({owner:account,open:false});setCopyFeedback({owner:account,status:""})});if(previousAccount.current&&!account){if(switching.current)switching.current=false;else requestAnimationFrame(()=>connectRef.current?.focus())}}previousAccount.current=account},[account]);
+
+  const copyAddress=async()=>{if(!account)return;const owner=account,write=navigator.clipboard?.writeText?.bind(navigator.clipboard),status=await copyPublicAddress(owner,write);if(currentAccount.current!==owner)return;setCopyFeedback({owner,status});if(copyTimer.current)clearTimeout(copyTimer.current);copyTimer.current=setTimeout(()=>setCopyFeedback({owner,status:""}),2400)};
 
   if (account) {
-    const label = `${account.slice(0, 6)}...${account.slice(-4)}`;
-    return <div><button type="button" onClick={disconnect} title={`Disconnect this TruthMarket session from ${selected?.info.name ?? "wallet"}; extension permissions are unchanged.`} className="border border-amber-300/35 bg-amber-300/10 px-3 py-2 text-sm font-medium text-amber-100 hover:bg-amber-300/15">{label}</button>{sessionError&&<p role="alert" className="absolute right-5 mt-2 max-w-xs rounded bg-red-950 p-2 text-xs text-red-100">{sessionError}</p>}</div>;
+    const providerName=providerPresentationName(selected?.info.name),providerIcon=safeProviderIcon(selected?.info.icon),short=shortenAddress(account),onBradbury=networkState==="connected",networkChanged=networkState==="changed";
+    return <div ref={containerRef} className="relative min-w-0">
+      <button ref={triggerRef} type="button" aria-expanded={open} aria-controls="connected-wallet-popup" aria-label={walletTriggerLabel(account,providerName,networkState)} onClick={()=>setDisclosure({owner:account,open:!open})} onKeyDown={event=>{if(event.key==="ArrowDown"){event.preventDefault();setDisclosure({owner:account,open:true});requestAnimationFrame(()=>containerRef.current?.querySelector<HTMLElement>("[data-wallet-action]")?.focus())}}} className="group flex min-h-11 w-full max-w-[15rem] items-center gap-2 rounded-md border border-amber-300/30 bg-[#11130f] px-2.5 py-1.5 text-left shadow-lg shadow-black/25 outline-none transition hover:border-amber-300/55 hover:bg-amber-300/[0.08] focus-visible:ring-2 focus-visible:ring-amber-300/50">
+        {providerIcon?<img src={providerIcon} alt="" className="size-7 shrink-0 rounded-md"/>:<span aria-hidden="true" className="grid size-7 shrink-0 place-items-center rounded-md bg-amber-300/12 text-xs font-semibold text-amber-100">W</span>}
+        <span className="min-w-0"><span className="block truncate text-xs font-semibold text-white">{providerName}</span><span className="block font-mono text-[11px] text-white/55">{short}</span></span>
+        <span className={`hidden items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-semibold sm:flex ${onBradbury?"border-emerald-300/20 bg-emerald-300/[0.08] text-emerald-100":"border-amber-300/30 bg-amber-300/10 text-amber-100"}`}><span className={`size-1.5 rounded-full ${onBradbury?"bg-emerald-300":"bg-amber-300"}`}/>{onBradbury?"Bradbury":networkChanged?"Changed":"Unavailable"}</span>
+        <svg aria-hidden="true" viewBox="0 0 20 20" className={`size-4 shrink-0 text-white/45 transition-transform ${open?"rotate-180":""}`}><path d="m6 8 4 4 4-4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"/></svg>
+      </button>
+      {open&&<div id="connected-wallet-popup" className="absolute right-0 z-40 mt-2 max-h-[min(32rem,calc(100vh-6rem))] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-amber-300/20 bg-[#0d1016] shadow-2xl shadow-black/60">
+        <div className="border-b border-white/10 p-4">
+          <div className="flex min-w-0 items-center gap-3">{providerIcon?<img src={providerIcon} alt="" className="size-10 shrink-0 rounded-lg"/>:<span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-lg bg-amber-300/10 font-semibold text-amber-100">W</span>}<div className="min-w-0"><p className="truncate font-semibold text-white" title={providerName}>{providerName}</p><p className="truncate font-mono text-xs text-white/48" title={account}>{account}</p></div></div>
+          <dl className="mt-4 grid grid-cols-2 gap-3 rounded-md border border-white/8 bg-black/20 p-3 text-xs"><div><dt className="text-white/40">Required network</dt><dd className="mt-1 text-white/80">GenLayer Bradbury</dd></div><div><dt className="text-white/40">Required chain ID</dt><dd className="mt-1 font-mono text-white/80">{BRADBURY_CHAIN_ID}</dd></div><div><dt className="text-white/40">Status</dt><dd className={`mt-1 ${onBradbury?"text-emerald-200":"text-amber-200"}`}>{walletNetworkStatusLabel(networkState)}</dd></div><div><dt className="text-white/40">Balance</dt><dd className="mt-1 text-white/80">{balance.status==="loading"?"Loading…":balance.status==="available"?balance.value:"Unavailable"}</dd></div></dl>
+          {sessionError&&<p role="status" className="mt-3 rounded border border-amber-300/20 bg-amber-300/[0.07] p-2 text-xs leading-5 text-amber-50/80">{sessionError}</p>}
+        </div>
+        <div className="p-2">
+          <button data-wallet-action type="button" onClick={()=>{void copyAddress()}} className="flex min-h-11 w-full items-center rounded-md px-3 text-left text-sm text-white/78 outline-none hover:bg-white/[0.07] focus-visible:bg-white/[0.09] focus-visible:ring-2 focus-visible:ring-amber-300/40">{copyStatus==="copied"?"Copied":copyStatus==="unavailable"?"Copy unavailable — select and copy the address manually":"Copy address"}</button>
+          <a href={walletExplorerUrl(BRADBURY_EXPLORER,account)} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center rounded-md px-3 text-sm text-white/78 outline-none hover:bg-white/[0.07] focus-visible:bg-white/[0.09] focus-visible:ring-2 focus-visible:ring-amber-300/40">View on Bradbury explorer <span aria-hidden="true" className="ml-auto">↗</span></a>
+          <button type="button" onClick={()=>{switching.current=true;closeMenu(false);switchWallet()}} className="flex min-h-11 w-full items-center rounded-md px-3 text-sm text-white/78 outline-none hover:bg-white/[0.07] focus-visible:bg-white/[0.09] focus-visible:ring-2 focus-visible:ring-amber-300/40">Switch wallet</button>
+          <div className="my-1 border-t border-white/10"/>
+          <button type="button" onClick={()=>{closeMenu(false);disconnect()}} className="flex min-h-11 w-full items-center rounded-md px-3 text-sm font-medium text-red-200 outline-none hover:bg-red-400/10 focus-visible:bg-red-400/10 focus-visible:ring-2 focus-visible:ring-red-300/40">Disconnect</button>
+        </div>
+      </div>}
+      <span role="status" aria-live="polite" className="sr-only">{copyStatus==="copied"?"Address copied.":copyStatus==="unavailable"?"Copy unavailable. Select and copy the address manually.":sessionStatus}</span>
+    </div>;
   }
 
   return (
     <div>
       <button
+        ref={connectRef}
         type="button"
         disabled={connectionPending||discoveryState==="DISCOVERING"}
         onClick={()=>{void connect()}}
-        className="border border-white/16 px-3 py-2 text-sm font-medium text-white hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-45"
+        className="min-h-11 rounded-md border border-white/16 px-3 py-2 text-sm font-medium text-white outline-none hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-amber-300/50 disabled:cursor-not-allowed disabled:opacity-45"
       >
         {discoveryState==="DISCOVERING"?"Discovering injected wallets…":connectionPending ? "Connecting" : "Connect wallet"}
       </button>
       <span role="status" aria-live="polite" className="sr-only">{discoveryState==="DISCOVERING"?"Discovering injected wallets…":connectionPending?"Wallet connection request pending.":"Wallet discovery complete."}</span>
+      {sessionStatus==="Wallet disconnected. Extension permissions were not changed."&&<p role="status" className="absolute right-5 mt-2 max-w-xs rounded border border-white/10 bg-[#111827] p-2 text-xs text-white/65">{sessionStatus}</p>}
       {sessionError&&<p role="alert" className="absolute right-5 mt-2 max-w-xs rounded bg-red-950 p-2 text-xs text-red-100">{sessionError}</p>}
     </div>
   );
