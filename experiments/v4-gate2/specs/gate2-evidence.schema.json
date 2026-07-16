@@ -1,0 +1,375 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://truthmarket.example/schemas/gate2-evidence.schema.json",
+  "title": "TruthMarket V4 Gate 2 evidence bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "overall_verdict",
+    "source_commit",
+    "reviewed_evidence_commit_sha",
+    "expected_bundle_sha256",
+    "bundle_sha256",
+    "artifact_hashes",
+    "runtime",
+    "public_identities",
+    "deployments",
+    "transactions",
+    "scenario_results",
+    "overlap_trials",
+    "reproduction_commands",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "overall_verdict": {"$ref": "#/$defs/overallStatus"},
+    "source_commit": {"$ref": "#/$defs/gitSha"},
+    "reviewed_evidence_commit_sha": {"$ref": "#/$defs/gitSha"},
+    "expected_bundle_sha256": {"$ref": "#/$defs/sha256"},
+    "bundle_sha256": {"$ref": "#/$defs/sha256"},
+    "artifact_hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requirements",
+        "probe_source",
+        "runner_source",
+        "verifier_source",
+        "model_tests",
+        "scheduler_tests",
+        "canonicalization_vectors"
+      ],
+      "properties": {
+        "requirements": {"$ref": "#/$defs/artifact"},
+        "probe_source": {"$ref": "#/$defs/artifact"},
+        "runner_source": {"$ref": "#/$defs/artifact"},
+        "verifier_source": {"$ref": "#/$defs/artifact"},
+        "model_tests": {"$ref": "#/$defs/artifact"},
+        "scheduler_tests": {"$ref": "#/$defs/artifact"},
+        "canonicalization_vectors": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "network",
+        "chain_id",
+        "rpc_endpoint",
+        "sdk_version",
+        "cli_version",
+        "python_dependency_identifier",
+        "transaction_hash_variant",
+        "finalized_read_variant"
+      ],
+      "properties": {
+        "network": {"const": "GenLayer Bradbury Testnet"},
+        "chain_id": {"const": 4221},
+        "rpc_endpoint": {"type": "string", "format": "uri"},
+        "sdk_version": {"type": "string", "minLength": 1},
+        "cli_version": {"type": "string", "minLength": 1},
+        "python_dependency_identifier": {"type": "string", "minLength": 1},
+        "transaction_hash_variant": {"type": "string", "minLength": 1},
+        "finalized_read_variant": {"const": "LATEST_FINAL"}
+      }
+    },
+    "public_identities": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "address"],
+        "properties": {
+          "role": {"type": "string", "enum": ["DEPLOYER", "REQUESTER", "EXECUTOR", "OVERLAP_INVALIDATOR"]},
+          "address": {"$ref": "#/$defs/address"}
+        }
+      }
+    },
+    "deployments": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/deploymentAttempt"}
+    },
+    "transactions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/transactionAttempt"}
+    },
+    "scenario_results": {
+      "type": "array",
+      "minItems": 19,
+      "maxItems": 19,
+      "prefixItems": [
+        {"$ref": "#/$defs/scenario01"},
+        {"$ref": "#/$defs/scenario02"},
+        {"$ref": "#/$defs/scenario03"},
+        {"$ref": "#/$defs/scenario04"},
+        {"$ref": "#/$defs/scenario05"},
+        {"$ref": "#/$defs/scenario06"},
+        {"$ref": "#/$defs/scenario07"},
+        {"$ref": "#/$defs/scenario08"},
+        {"$ref": "#/$defs/scenario09"},
+        {"$ref": "#/$defs/scenario10"},
+        {"$ref": "#/$defs/scenario11"},
+        {"$ref": "#/$defs/scenario12"},
+        {"$ref": "#/$defs/scenario13"},
+        {"$ref": "#/$defs/scenario14"},
+        {"$ref": "#/$defs/scenario15"},
+        {"$ref": "#/$defs/scenario16"},
+        {"$ref": "#/$defs/scenario17"},
+        {"$ref": "#/$defs/scenario18"},
+        {"$ref": "#/$defs/scenario19"}
+      ],
+      "items": false
+    },
+    "overlap_trials": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {"allOf": [{"$ref": "#/$defs/overlapTrial"}, {"properties": {"trial_id": {"const": "G2-OVERLAP-T1"}, "predeclared_index": {"const": 1}}}]},
+        {"allOf": [{"$ref": "#/$defs/overlapTrial"}, {"properties": {"trial_id": {"const": "G2-OVERLAP-T2"}, "predeclared_index": {"const": 2}}}]},
+        {"allOf": [{"$ref": "#/$defs/overlapTrial"}, {"properties": {"trial_id": {"const": "G2-OVERLAP-T3"}, "predeclared_index": {"const": 3}}}]}
+      ],
+      "items": false
+    },
+    "reproduction_commands": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "address": {"type": "string", "pattern": "^0x[0-9a-fA-F]{40}$"},
+    "transactionHash": {"type": "string", "pattern": "^0x[0-9a-fA-F]{64}$"},
+    "safeInteger": {"type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991},
+    "positiveSafeInteger": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "overallStatus": {"type": "string", "enum": ["PASS", "FAIL", "REQUEST_CHANGES", "INCONCLUSIVE", "NOT_RUN"]},
+    "trialStatus": {"type": "string", "enum": ["PASS", "FAIL", "INCONCLUSIVE", "NOT_RUN"]},
+    "scenarioId": {"type": "string", "enum": ["G2-S01-BASELINE-REQUEST", "G2-S02-CURRENT-EXECUTION", "G2-S03-DUPLICATE-EXECUTION", "G2-S04-EXPIRE-ATTEMPT", "G2-S05-RETRY-SUCCESSOR", "G2-S06-STALE-AFTER-SUCCESSOR-CREATION", "G2-S07-SUCCESSOR-AFTER-STALE-CALLS", "G2-S08-STALE-AFTER-SUCCESSOR-SUCCEEDED", "G2-S09-THREE-ATTEMPT-ORDERING", "G2-S10-CANCELLED-STATE-PRECEDENCE", "G2-S11-TERMINAL-STATE-PRECEDENCE", "G2-S12-ZERO-ID", "G2-S13-NEGATIVE-ID", "G2-S14-MISSING-OR-FUTURE-ID", "G2-S15-ALLOCATION-ROLLBACK", "G2-S16-COMPETING-RETRY", "G2-S17-DISTINCT-EXECUTOR", "G2-S18-LIVE-OVERLAP", "G2-S19-COMPLETE-EVIDENCE"]},
+    "passReason": {"type": "string", "enum": ["PASS_SERIAL_GUARD", "PASS_CURRENT_EXECUTION", "PASS_RETRY_SUCCESSOR", "PASS_OVERLAP_ORDER_PROVED_NO_MUTATION", "PASS_SUCCESSFUL_SUCCESSOR_PROTECTED", "PASS_COMPLETE_EVIDENCE"]},
+    "failReason": {"type": "string", "enum": ["FAIL_STALE_MUTATION", "FAIL_SUCCESSOR_OVERWRITTEN", "FAIL_SUCCESSOR_BLOCKED", "FAIL_DUPLICATE_MUTATION", "FAIL_TERMINAL_REVIVED", "FAIL_CANCELLED_REVIVED", "FAIL_MULTIPLE_ACTIVE_ATTEMPTS", "FAIL_ALLOCATION_CONSUMED_ON_REJECTION", "FAIL_INVALID_ID_MUTATION"]},
+    "inconclusiveReason": {"type": "string", "enum": ["INCONCLUSIVE_ORDER_NOT_PROVED", "INCONCLUSIVE_OLD_PATH_NOT_PROVED", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "INCONCLUSIVE_FINAL_STATE_UNSTABLE", "INCONCLUSIVE_TRACE_UNAVAILABLE", "INCONCLUSIVE_SOURCE_SCHEMA_IDENTITY"]},
+    "notRunReason": {"type": "string", "enum": ["NOT_RUN_SETUP_FAILED", "NOT_RUN_SUBMISSION_FAILED", "NOT_RUN_MANDATORY_ACTION_MISSING"]},
+    "requestChangesReason": {"type": "string", "enum": ["REQUEST_CHANGES_MISSING_TRIAL", "REQUEST_CHANGES_EXTRA_TRIAL", "REQUEST_CHANGES_DUPLICATE_TRIAL", "REQUEST_CHANGES_DISCARDED_TRIAL", "REQUEST_CHANGES_MISSING_SCENARIO", "REQUEST_CHANGES_EXTRA_SCENARIO", "REQUEST_CHANGES_DUPLICATE_SCENARIO", "REQUEST_CHANGES_SCHEMA_INVALID", "REQUEST_CHANGES_VERDICT_MISMATCH", "REQUEST_CHANGES_REASON_CODE_MISMATCH", "REQUEST_CHANGES_CANONICALIZATION_MISMATCH", "REQUEST_CHANGES_TRUST_ANCHOR_MISMATCH", "REQUEST_CHANGES_ARTIFACT_HASH_MISMATCH", "REQUEST_CHANGES_WRONG_FAILURE_CAUSE", "REQUEST_CHANGES_ORDERING_EVIDENCE_INVALID", "REQUEST_CHANGES_MUTATION_SET_MISMATCH", "REQUEST_CHANGES_UNVERIFIED_TRIAL", "REQUEST_CHANGES_UNVERIFIED_SCENARIO", "REQUEST_CHANGES_ASSERTION_INVENTORY_INVALID", "REQUEST_CHANGES_SNAPSHOT_CLAIM_INVALID", "REQUEST_CHANGES_UNEXPECTED_ARRAY_PROPERTY", "REQUEST_CHANGES_DEPLOYMENT_RECORD_INVALID", "REQUEST_CHANGES_TRANSACTION_RECORD_INVALID"]},
+    "safeJsonValue": {
+      "anyOf": [
+        {"type": "null"},
+        {"type": "boolean"},
+        {"$ref": "#/$defs/safeInteger"},
+        {"type": "string"},
+        {"type": "array", "items": {"$ref": "#/$defs/safeJsonValue"}},
+        {
+          "type": "object",
+          "propertyNames": {"pattern": "^(?!(private_key|privateKey|mnemonic|seed|secret|raw_signed_transaction|authorization)$).+$"},
+          "additionalProperties": {"$ref": "#/$defs/safeJsonValue"}
+        }
+      ]
+    },
+    "safeStructuredPayload": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^(?!(private_key|privateKey|mnemonic|seed|secret|raw_signed_transaction|authorization)$).+$"},
+      "additionalProperties": {"$ref": "#/$defs/safeJsonValue"}
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "deploymentAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenario_family", "deployment_status", "attempted", "address", "deployment_transaction_hash", "failure_stage", "safe_error", "local_source_sha256", "deployed_source_sha256", "local_schema_sha256", "deployed_schema_sha256", "source_equal", "schema_equal", "statusName", "txExecutionResultName"],
+      "properties": {
+        "scenario_family": {"type": "string", "enum": ["BASELINE_DUPLICATE_DISTINCT_EXECUTOR", "TWO_ATTEMPT_STALE_BEFORE_SUCCESS", "SUCCESSFUL_SUCCESSOR_PROTECTION", "THREE_ATTEMPT_ORDERING", "CANCELLATION", "PROBE_TERMINALIZATION", "INVALID_IDS_ALLOCATION", "COMPETING_RETRY", "OVERLAP_TRIAL_1", "OVERLAP_TRIAL_2", "OVERLAP_TRIAL_3"]},
+        "deployment_status": {"enum": ["DEPLOYED", "FAILED_BEFORE_HASH", "FAILED_AFTER_HASH", "NOT_RUN"]},
+        "attempted": {"type": "boolean"},
+        "address": {"anyOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]},
+        "deployment_transaction_hash": {"anyOf": [{"$ref": "#/$defs/transactionHash"}, {"type": "null"}]},
+        "failure_stage": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]},
+        "safe_error": {"anyOf": [{"$ref": "#/$defs/safeStructuredPayload"}, {"type": "null"}]},
+        "local_source_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "deployed_source_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "local_schema_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "deployed_schema_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "source_equal": {"anyOf": [{"type": "boolean"}, {"type": "null"}]},
+        "schema_equal": {"anyOf": [{"type": "boolean"}, {"type": "null"}]},
+        "statusName": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]},
+        "txExecutionResultName": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]}
+      },
+      "allOf": [
+        {"if": {"properties": {"deployment_status": {"const": "DEPLOYED"}}, "required": ["deployment_status"]}, "then": {"properties": {"attempted": {"const": true}, "address": {"$ref": "#/$defs/address"}, "deployment_transaction_hash": {"$ref": "#/$defs/transactionHash"}, "failure_stage": {"type": "null"}, "safe_error": {"type": "null"}, "local_source_sha256": {"$ref": "#/$defs/sha256"}, "deployed_source_sha256": {"$ref": "#/$defs/sha256"}, "local_schema_sha256": {"$ref": "#/$defs/sha256"}, "deployed_schema_sha256": {"$ref": "#/$defs/sha256"}, "source_equal": {"const": true}, "schema_equal": {"const": true}, "statusName": {"const": "FINALIZED"}, "txExecutionResultName": {"const": "FINISHED_WITH_RETURN"}}}},
+        {"if": {"properties": {"deployment_status": {"const": "FAILED_BEFORE_HASH"}}, "required": ["deployment_status"]}, "then": {"properties": {"attempted": {"const": true}, "address": {"type": "null"}, "deployment_transaction_hash": {"type": "null"}, "failure_stage": {"type": "string", "minLength": 1}, "safe_error": {"$ref": "#/$defs/safeStructuredPayload"}, "statusName": {"type": "null"}, "txExecutionResultName": {"type": "null"}}}},
+        {"if": {"properties": {"deployment_status": {"const": "FAILED_AFTER_HASH"}}, "required": ["deployment_status"]}, "then": {"properties": {"attempted": {"const": true}, "deployment_transaction_hash": {"$ref": "#/$defs/transactionHash"}, "failure_stage": {"type": "string", "minLength": 1}}, "anyOf": [{"properties": {"safe_error": {"$ref": "#/$defs/safeStructuredPayload"}}}, {"properties": {"statusName": {"type": "string", "minLength": 1}}}]}},
+        {"if": {"properties": {"deployment_status": {"const": "NOT_RUN"}}, "required": ["deployment_status"]}, "then": {"properties": {"attempted": {"const": false}, "address": {"type": "null"}, "deployment_transaction_hash": {"type": "null"}, "failure_stage": {"type": "string", "minLength": 1}, "statusName": {"type": "null"}, "txExecutionResultName": {"type": "null"}}}}
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canonical_json", "sha256", "state"],
+      "properties": {
+        "canonical_json": {"type": "string"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "state": {"type": "object", "propertyNames": {"pattern": "^(?!(private_key|privateKey|mnemonic|seed|secret|raw_signed_transaction|authorization)$).+$"}, "additionalProperties": {"$ref": "#/$defs/safeJsonValue"}}
+      }
+    },
+    "mutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "before", "after"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "before": {"$ref": "#/$defs/safeJsonValue"},
+        "after": {"$ref": "#/$defs/safeJsonValue"}
+      }
+    },
+    "assertionClaim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "passed"],
+      "properties": {
+        "id": {"enum": ["ORDERING_PROVED", "OLD_PATH_ENTERED", "NO_STALE_MUTATION", "SUCCESSOR_REMAINS_EXECUTABLE", "SUCCESSOR_STATE_UNCHANGED", "FINAL_STATE_STABLE"]},
+        "passed": {"type": "boolean"}
+      }
+    },
+    "transactionAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transaction_record_id", "label", "scenario_id", "sender", "submission_status", "record_reason", "hash", "submission_stage", "safe_error", "submission_sequence", "submitted_at", "observation_sequence", "statusName", "txExecutionResultName", "decoded_result_or_safe_error", "finalized_at", "inconclusive_reason", "before_snapshot_digest", "after_snapshot_digest"],
+      "properties": {
+        "transaction_record_id": {"type": "string", "minLength": 1},
+        "label": {"type": "string", "minLength": 1},
+        "scenario_id": {"$ref": "#/$defs/scenarioId"},
+        "sender": {"$ref": "#/$defs/address"},
+        "submission_status": {"enum": ["NOT_SUBMITTED", "SUBMISSION_FAILED", "SUBMITTED_NONTERMINAL", "AUTHORITATIVE_TERMINAL"]},
+        "record_reason": {"type": "string", "minLength": 1},
+        "hash": {"anyOf": [{"$ref": "#/$defs/transactionHash"}, {"type": "null"}]},
+        "submission_stage": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]},
+        "safe_error": {"anyOf": [{"$ref": "#/$defs/safeStructuredPayload"}, {"type": "null"}]},
+        "attempt_id": {"anyOf": [{"$ref": "#/$defs/positiveSafeInteger"}, {"type": "null"}]},
+        "submission_sequence": {"anyOf": [{"type": "integer", "minimum": 1, "maximum": 9007199254740991}, {"type": "null"}]},
+        "submitted_at": {"anyOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]},
+        "account_nonce": {"anyOf": [{"type": "string", "pattern": "^(0|[1-9][0-9]*)$"}, {"type": "null"}]},
+        "observation_sequence": {"type": "array", "items": {"$ref": "#/$defs/safeJsonValue"}},
+        "statusName": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]},
+        "txExecutionResultName": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]},
+        "decoded_result_or_safe_error": {"anyOf": [{"$ref": "#/$defs/safeJsonValue"}, {"type": "null"}]},
+        "finalized_at": {"anyOf": [{"type": "string", "format": "date-time"}, {"type": "null"}]},
+        "inconclusive_reason": {"anyOf": [{"$ref": "#/$defs/inconclusiveReason"}, {"type": "null"}]},
+        "before_snapshot_digest": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "after_snapshot_digest": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]}
+      },
+      "allOf": [
+        {"if": {"properties": {"submission_status": {"const": "NOT_SUBMITTED"}}, "required": ["submission_status"]}, "then": {"properties": {"hash": {"type": "null"}, "submission_stage": {"type": "string", "minLength": 1}, "submission_sequence": {"type": "null"}, "submitted_at": {"type": "null"}, "statusName": {"type": "null"}, "txExecutionResultName": {"type": "null"}, "finalized_at": {"type": "null"}}}},
+        {"if": {"properties": {"submission_status": {"const": "SUBMISSION_FAILED"}}, "required": ["submission_status"]}, "then": {"properties": {"hash": {"type": "null"}, "submission_stage": {"type": "string", "minLength": 1}, "safe_error": {"$ref": "#/$defs/safeStructuredPayload"}, "statusName": {"type": "null"}, "txExecutionResultName": {"type": "null"}, "finalized_at": {"type": "null"}}}},
+        {"if": {"properties": {"submission_status": {"const": "SUBMITTED_NONTERMINAL"}}, "required": ["submission_status"]}, "then": {"properties": {"hash": {"$ref": "#/$defs/transactionHash"}, "observation_sequence": {"type": "array", "minItems": 1}, "statusName": {"type": "string", "minLength": 1}, "inconclusive_reason": {"$ref": "#/$defs/inconclusiveReason"}, "finalized_at": {"type": "null"}}}},
+        {"if": {"properties": {"submission_status": {"const": "AUTHORITATIVE_TERMINAL"}}, "required": ["submission_status"]}, "then": {"properties": {"hash": {"$ref": "#/$defs/transactionHash"}, "statusName": {"type": "string", "minLength": 1}, "txExecutionResultName": {"type": "string", "minLength": 1}, "finalized_at": {"type": "string", "format": "date-time"}, "inconclusive_reason": {"type": "null"}, "before_snapshot_digest": {"$ref": "#/$defs/sha256"}, "after_snapshot_digest": {"$ref": "#/$defs/sha256"}}}}
+      ]
+    },
+    "scenarioResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenario_id", "ordering_achieved", "expected_transaction_category", "observed_transaction_category", "before_snapshot", "after_snapshot", "missing_evidence", "allowed_mutations", "observed_mutations", "mandatory_assertions", "scenario_status", "scenario_reason_code"],
+      "properties": {
+        "scenario_id": {"$ref": "#/$defs/scenarioId"},
+        "ordering_achieved": {"type": "boolean"},
+        "expected_transaction_category": {"type": "string"},
+        "observed_transaction_category": {"type": "string"},
+        "before_snapshot": {"anyOf": [{"$ref": "#/$defs/snapshot"}, {"type": "null"}]},
+        "after_snapshot": {"anyOf": [{"$ref": "#/$defs/snapshot"}, {"type": "null"}]},
+        "missing_evidence": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "allowed_mutations": {"type": "array", "items": {"type": "string"}},
+        "observed_mutations": {"type": "array", "items": {"$ref": "#/$defs/mutation"}},
+        "mandatory_assertions": {"type": "array", "items": {"$ref": "#/$defs/assertionClaim"}},
+        "scenario_status": {"$ref": "#/$defs/overallStatus"},
+        "scenario_reason_code": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {"if": {"properties": {"scenario_status": {"const": "PASS"}}, "required": ["scenario_status"]}, "then": {"properties": {"scenario_reason_code": {"$ref": "#/$defs/passReason"}, "before_snapshot": {"$ref": "#/$defs/snapshot"}, "after_snapshot": {"$ref": "#/$defs/snapshot"}, "missing_evidence": {"maxItems": 0}}}},
+        {"if": {"properties": {"scenario_status": {"const": "FAIL"}}, "required": ["scenario_status"]}, "then": {"properties": {"scenario_reason_code": {"$ref": "#/$defs/failReason"}, "before_snapshot": {"$ref": "#/$defs/snapshot"}, "after_snapshot": {"$ref": "#/$defs/snapshot"}, "missing_evidence": {"maxItems": 0}}}},
+        {"if": {"properties": {"scenario_status": {"const": "REQUEST_CHANGES"}}, "required": ["scenario_status"]}, "then": {"properties": {"scenario_reason_code": {"$ref": "#/$defs/requestChangesReason"}}}},
+        {"if": {"properties": {"scenario_status": {"const": "INCONCLUSIVE"}}, "required": ["scenario_status"]}, "then": {"properties": {"scenario_reason_code": {"$ref": "#/$defs/inconclusiveReason"}, "missing_evidence": {"minItems": 1}}}},
+        {"if": {"properties": {"scenario_status": {"const": "NOT_RUN"}}, "required": ["scenario_status"]}, "then": {"properties": {"scenario_reason_code": {"$ref": "#/$defs/notRunReason"}, "before_snapshot": {"type": "null"}, "after_snapshot": {"type": "null"}, "missing_evidence": {"minItems": 1}}}}
+      ]
+    },
+    "scenario01": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S01-BASELINE-REQUEST"}}}]},
+    "scenario02": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S02-CURRENT-EXECUTION"}}}]},
+    "scenario03": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S03-DUPLICATE-EXECUTION"}}}]},
+    "scenario04": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S04-EXPIRE-ATTEMPT"}}}]},
+    "scenario05": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S05-RETRY-SUCCESSOR"}}}]},
+    "scenario06": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S06-STALE-AFTER-SUCCESSOR-CREATION"}}}]},
+    "scenario07": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S07-SUCCESSOR-AFTER-STALE-CALLS"}}}]},
+    "scenario08": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S08-STALE-AFTER-SUCCESSOR-SUCCEEDED"}}}]},
+    "scenario09": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S09-THREE-ATTEMPT-ORDERING"}}}]},
+    "scenario10": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S10-CANCELLED-STATE-PRECEDENCE"}}}]},
+    "scenario11": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S11-TERMINAL-STATE-PRECEDENCE"}}}]},
+    "scenario12": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S12-ZERO-ID"}}}]},
+    "scenario13": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S13-NEGATIVE-ID"}}}]},
+    "scenario14": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S14-MISSING-OR-FUTURE-ID"}}}]},
+    "scenario15": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S15-ALLOCATION-ROLLBACK"}}}]},
+    "scenario16": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S16-COMPETING-RETRY"}}}]},
+    "scenario17": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S17-DISTINCT-EXECUTOR"}}}]},
+    "scenario18": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S18-LIVE-OVERLAP"}}}]},
+    "scenario19": {"allOf": [{"$ref": "#/$defs/scenarioResult"}, {"properties": {"scenario_id": {"const": "G2-S19-COMPLETE-EVIDENCE"}}}]},
+    "orderingEvidenceType": {"type": "string", "enum": ["CONSENSUS_HEIGHT", "FINALIZATION_HEIGHT", "TRANSACTION_ORDER_INDEX", "HISTORICAL_STATUS", "REEXECUTION_TRACE", "CONFLICT_TRACE", "UNAVAILABLE"]},
+    "overlapTrial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trial_id", "predeclared_index", "deployment_address", "deployment_transaction_hash", "old_attempt_id", "successor_attempt_id", "old_execution_hash", "invalidation_hash", "retry_hash", "old_execution_path_entered", "authoritative_ordering_evidence_type", "authoritative_ordering_evidence", "ordering_achieved", "before_state", "successor_authoritative_state", "after_old_execution_state", "allowed_mutations", "observed_mutations", "mandatory_assertions", "trial_status", "trial_reason_code"],
+      "properties": {
+        "trial_id": {"type": "string"},
+        "predeclared_index": {"type": "integer", "minimum": 1, "maximum": 3},
+        "deployment_address": {"anyOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]},
+        "deployment_transaction_hash": {"anyOf": [{"$ref": "#/$defs/transactionHash"}, {"type": "null"}]},
+        "old_attempt_id": {"anyOf": [{"$ref": "#/$defs/positiveSafeInteger"}, {"type": "null"}]},
+        "successor_attempt_id": {"anyOf": [{"$ref": "#/$defs/positiveSafeInteger"}, {"type": "null"}]},
+        "old_execution_hash": {"anyOf": [{"$ref": "#/$defs/transactionHash"}, {"type": "null"}]},
+        "invalidation_hash": {"anyOf": [{"$ref": "#/$defs/transactionHash"}, {"type": "null"}]},
+        "retry_hash": {"anyOf": [{"$ref": "#/$defs/transactionHash"}, {"type": "null"}]},
+        "old_execution_path_entered": {"type": "boolean"},
+        "authoritative_ordering_evidence_type": {"$ref": "#/$defs/orderingEvidenceType"},
+        "authoritative_ordering_evidence": {"type": "object", "propertyNames": {"pattern": "^(?!(private_key|privateKey|mnemonic|seed|secret|raw_signed_transaction|authorization)$).+$"}, "additionalProperties": {"$ref": "#/$defs/safeJsonValue"}},
+        "ordering_achieved": {"type": "boolean"},
+        "before_state": {"anyOf": [{"$ref": "#/$defs/snapshot"}, {"type": "null"}]},
+        "successor_authoritative_state": {"anyOf": [{"$ref": "#/$defs/snapshot"}, {"type": "null"}]},
+        "after_old_execution_state": {"anyOf": [{"$ref": "#/$defs/snapshot"}, {"type": "null"}]},
+        "allowed_mutations": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "observed_mutations": {"type": "array", "items": {"$ref": "#/$defs/mutation"}},
+        "mandatory_assertions": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "prefixItems": [
+            {"allOf": [{"$ref": "#/$defs/assertionClaim"}, {"properties": {"id": {"const": "ORDERING_PROVED"}}}]},
+            {"allOf": [{"$ref": "#/$defs/assertionClaim"}, {"properties": {"id": {"const": "OLD_PATH_ENTERED"}}}]},
+            {"allOf": [{"$ref": "#/$defs/assertionClaim"}, {"properties": {"id": {"const": "NO_STALE_MUTATION"}}}]},
+            {"allOf": [{"$ref": "#/$defs/assertionClaim"}, {"properties": {"id": {"const": "SUCCESSOR_REMAINS_EXECUTABLE"}}}]},
+            {"allOf": [{"$ref": "#/$defs/assertionClaim"}, {"properties": {"id": {"const": "SUCCESSOR_STATE_UNCHANGED"}}}]},
+            {"allOf": [{"$ref": "#/$defs/assertionClaim"}, {"properties": {"id": {"const": "FINAL_STATE_STABLE"}}}]}
+          ],
+          "items": false
+        },
+        "trial_status": {"$ref": "#/$defs/trialStatus"},
+        "trial_reason_code": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {"if": {"properties": {"trial_status": {"const": "PASS"}}, "required": ["trial_status"]}, "then": {"properties": {"trial_reason_code": {"$ref": "#/$defs/passReason"}, "ordering_achieved": {"const": true}, "old_execution_path_entered": {"const": true}, "authoritative_ordering_evidence_type": {"not": {"const": "UNAVAILABLE"}}, "authoritative_ordering_evidence": {"type": "object", "minProperties": 1}, "old_execution_hash": {"$ref": "#/$defs/transactionHash"}, "before_state": {"$ref": "#/$defs/snapshot"}, "successor_authoritative_state": {"$ref": "#/$defs/snapshot"}, "after_old_execution_state": {"$ref": "#/$defs/snapshot"}, "allowed_mutations": {"type": "array", "maxItems": 0}, "observed_mutations": {"type": "array", "maxItems": 0}}}},
+        {"if": {"properties": {"trial_status": {"const": "FAIL"}}, "required": ["trial_status"]}, "then": {"properties": {"trial_reason_code": {"$ref": "#/$defs/failReason"}, "ordering_achieved": {"const": true}, "observed_mutations": {"type": "array", "minItems": 1}}}},
+        {"if": {"properties": {"trial_status": {"const": "INCONCLUSIVE"}}, "required": ["trial_status"]}, "then": {"properties": {"trial_reason_code": {"$ref": "#/$defs/inconclusiveReason"}}}},
+        {"if": {"properties": {"trial_status": {"const": "NOT_RUN"}}, "required": ["trial_status"]}, "then": {"properties": {"trial_reason_code": {"$ref": "#/$defs/notRunReason"}}}},
+        {"if": {"properties": {"authoritative_ordering_evidence_type": {"const": "UNAVAILABLE"}}, "required": ["authoritative_ordering_evidence_type"]}, "then": {"properties": {"ordering_achieved": {"const": false}, "trial_status": {"enum": ["INCONCLUSIVE", "NOT_RUN"]}}}}
+      ]
+    }
+  }
+}
