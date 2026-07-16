@@ -1,0 +1,172 @@
+{
+  "verdict": "GATE 1 PASSED",
+  "evidenceStatus": "all five GenLayer transactions finalized and final state verified",
+  "sourceCommit": "625bbe5fb53d8cdafe55c8879bae987698711215",
+  "network": {
+    "name": "Genlayer Bradbury Testnet",
+    "chainId": 4221,
+    "rpc": "https://rpc-bradbury.genlayer.com",
+    "consensusContract": "0x0112Bf6e83497965A5fdD6Dad1E447a6E004271D"
+  },
+  "sourceCodeSha256": "258c9023adfca7fdee94028baa228fb112bc854ca1db05a2869b70f204eb9e1a",
+  "deployedCodeSha256": "258c9023adfca7fdee94028baa228fb112bc854ca1db05a2869b70f204eb9e1a",
+  "requester": "0x1f87Ae197af539253978d435aD45cCf28Fb95024",
+  "executor": "0x22c3D77ee135905C0ED00cC8249Ef5958399b3e1",
+  "deployment": {
+    "hash": "0xc005a1e04714302261880fcc2d4a70692d45794d54918691b918e7123ed816e7",
+    "contractAddress": "0xeE59406E93c60BcA0375EdD4084209aA28e6Ab95",
+    "submittedAt": "2026-07-16T00:05:40Z",
+    "accepted": {
+      "statusName": "ACCEPTED",
+      "resultName": "AGREE",
+      "txExecutionResultName": "FINISHED_WITH_RETURN",
+      "createdTimestamp": "1784160340",
+      "lastVoteTimestamp": "1784160346",
+      "validatorVotesName": ["AGREE", "AGREE", "AGREE", "AGREE", "AGREE"]
+    },
+    "firstReadyToFinalizeTimestamp": "1784162146",
+    "finalized": {
+      "observedAt": "2026-07-16T00:36:08.169Z",
+      "statusName": "FINALIZED",
+      "resultName": "AGREE",
+      "txExecutionResultName": "FINISHED_WITH_RETURN",
+      "currentTimestamp": "1784162168",
+      "finalizationEvmHash": null
+    }
+  },
+  "request": {
+    "hash": "0x2c1597b55bf683bbdea008c7beb20752d1b71004ffa5b539b306a42bee646aa0",
+    "caller": "0x1f87Ae197af539253978d435aD45cCf28Fb95024",
+    "createdTimestamp": "1784160701",
+    "accepted": {
+      "statusName": "ACCEPTED",
+      "resultName": "AGREE",
+      "txExecutionResultName": "FINISHED_WITH_RETURN",
+      "lastVoteTimestamp": "1784160708",
+      "validatorVotesName": ["AGREE", "AGREE", "AGREE", "AGREE", "AGREE"]
+    },
+    "acceptedState": {
+      "request_id": "1",
+      "payload": "gate-one-alpha",
+      "requester": "0x1f87Ae197af539253978d435aD45cCf28Fb95024",
+      "requested_at": "2026-07-16T00:11:41Z",
+      "status": "REQUESTED",
+      "result": "",
+      "executor": "",
+      "completed_at": ""
+    },
+    "finalized": {
+      "observedAt": "2026-07-16T00:42:19.099Z",
+      "statusName": "FINALIZED",
+      "resultName": "AGREE",
+      "txExecutionResultName": "FINISHED_WITH_RETURN",
+      "currentTimestamp": "1784162537"
+    }
+  },
+  "execution": {
+    "hash": "0x9045f352ed6520e37ef23587c5ed69c63896b9cf91a19469d5de589e1c674e82",
+    "caller": "0x22c3D77ee135905C0ED00cC8249Ef5958399b3e1",
+    "createdTimestamp": "1784160790",
+    "accepted": {
+      "statusName": "ACCEPTED",
+      "resultName": "AGREE",
+      "txExecutionResultName": "FINISHED_WITH_RETURN",
+      "lastVoteTimestamp": "1784160829",
+      "eqBlocksOutput": "OTHER",
+      "validatorVotesName": ["AGREE", "AGREE", "AGREE", "TIMEOUT", "DETERMINISTIC_VIOLATION"]
+    },
+    "acceptedState": {
+      "request_id": "1",
+      "payload": "gate-one-alpha",
+      "requester": "0x1f87Ae197af539253978d435aD45cCf28Fb95024",
+      "requested_at": "2026-07-16T00:11:41Z",
+      "status": "COMPLETED",
+      "result": "OTHER",
+      "executor": "0x22c3D77ee135905C0ED00cC8249Ef5958399b3e1",
+      "completed_at": "2026-07-16T00:13:10Z"
+    },
+    "finalized": {
+      "observedAt": "2026-07-16T00:44:04.469Z",
+      "statusName": "FINALIZED",
+      "resultName": "AGREE",
+      "txExecutionResultName": "FINISHED_WITH_RETURN",
+      "currentTimestamp": "1784162642"
+    }
+  },
+  "duplicateExecution": {
+    "hash": "0x1da36ecfb9dcea961e6279e9c0be10deca67ee44e95ca3d53e7211385a134edf",
+    "caller": "0x22c3D77ee135905C0ED00cC8249Ef5958399b3e1",
+    "createdTimestamp": "1784160953",
+    "accepted": {
+      "statusName": "ACCEPTED",
+      "resultName": "AGREE",
+      "txExecutionResultName": "FINISHED_WITH_ERROR",
+      "validatorVotesName": ["DISAGREE", "DISAGREE", "DISAGREE", "DISAGREE", "DISAGREE"]
+    },
+    "traceError": "AssertionError: request is not executable",
+    "traceLlmCalls": 0,
+    "storageProof": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "stateUnchanged": true,
+    "finalized": {
+      "observedAt": "2026-07-16T00:46:17.181Z",
+      "statusName": "FINALIZED",
+      "resultName": "AGREE",
+      "txExecutionResultName": "FINISHED_WITH_ERROR",
+      "currentTimestamp": "1784162775"
+    }
+  },
+  "invalidRequest": {
+    "requestId": "999999",
+    "hash": "0xdc4e83844aa65f8c8263330bf71377d4385239cc0df2f214d01cdfd145086127",
+    "caller": "0x22c3D77ee135905C0ED00cC8249Ef5958399b3e1",
+    "createdTimestamp": "1784161050",
+    "accepted": {
+      "statusName": "ACCEPTED",
+      "resultName": "AGREE",
+      "txExecutionResultName": "FINISHED_WITH_ERROR",
+      "validatorVotesName": ["DISAGREE", "DISAGREE", "DISAGREE", "DISAGREE", "DISAGREE"]
+    },
+    "traceError": "AssertionError: request not found",
+    "traceLlmCalls": 0,
+    "storageProof": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "requestCountAfter": "1",
+    "stateUnchanged": true,
+    "finalized": {
+      "observedAt": "2026-07-16T00:48:23.540Z",
+      "statusName": "FINALIZED",
+      "resultName": "AGREE",
+      "txExecutionResultName": "FINISHED_WITH_ERROR",
+      "currentTimestamp": "1784162899"
+    }
+  },
+  "observability": {
+    "submittedHashesAvailable": true,
+    "acceptedReceiptsAvailable": true,
+    "acceptedAndFinalizedTransactionStatusesDistinct": true,
+    "appealWindowSecondsFromDeploymentCreation": 1806,
+    "sdkReadFinding": "genlayer-js 1.1.8 ignores stateStatus; transactionHashVariant is supported, but latest-final and latest-nonfinal returned the same accepted-state data during this run. Transaction finality was therefore established from transaction status, not inferred from read snapshots."
+  },
+  "setupAndToolingObservations": {
+    "temporaryExecutorCredentialLockedAfterRun": true,
+    "activeCliAccountRestored": "worker",
+    "rejectedFinalizeWrapperHash": "0x9aa18f70b0cd77af2db11c392423797b41e888e2200ac368a614435411699a37",
+    "rejectedDuplicateFundingWrapperHash": "0x7915c3cc700bf901127ac4a1351af91fbc8e704ba2f45ca18a03a14c6abf8d4f",
+    "rejectedInvalidFundingWrapperHash": "0x4a2cd1677e3089ffbed3ae786a796de14fc7c761dbb1411fe237cba8177c05d0",
+    "fundingTransactions": [
+      "0xfca4e3c0782837f20c4c10e4244972edbe26272f99cbea693a27eaa426ca17ca",
+      "0xcde3a9a4bba3806f3640de4595bf3cbdbe5be4213310a399b26c43612b2c27f8",
+      "0x61db672f56148d369265ae2a543f05ea41c4ebe1624323f1b3bb673c911760be",
+      "0x39e8937ad5f8118d2d609661e5a6f43332a8fa5ce5e3e3b8cdd0a0a3284879f7"
+    ],
+    "invalidDeploymentTransactions": [
+      "0xe3b9a4ef9b57a3174e946aa809bbeb984dc8f11cd31bf775b32abc97af958765",
+      "0xf9897030d3505dc8ce43ec960f9c7d944737f36538d20b37da8626e4ff11b413",
+      "0xe2814d9902bd439ab82bdb3f16089c0165cf61ca980dc6f14fa50aa2faa8b650"
+    ]
+  },
+  "limitations": [
+    "The constrained classifier returned OTHER for gate-one-alpha; lifecycle execution succeeded, but semantic classification quality was not established.",
+    "The successful execution trace used two precompile hits and reported zero direct LLM module calls even though the receipt carried a non-comparative eq-block output; the exact caching/trace attribution is a platform observability limitation.",
+    "The probe does not test or claim any Gate 2-10 property."
+  ]
+}
