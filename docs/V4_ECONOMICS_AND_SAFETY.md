@@ -1,19 +1,19 @@
 # TruthMarket V4 economics and safety
 
-Status: **proposed, unimplemented, and undeployed**. This document is normative with the [architecture](V4_ARCHITECTURE.md), [state machine](V4_STATE_MACHINE.md), [migration plan](V4_MIGRATION_PLAN.md), and [test plan](V4_TEST_PLAN.md). Symbolic production limits require benchmarking; they are not evidence of feasibility.
+Status: **proposed, unimplemented, and undeployed**. This document is normative with the [architecture](V4_ARCHITECTURE.md), [state machine](V4_STATE_MACHINE.md), [migration plan](V4_MIGRATION_PLAN.md), [test plan](V4_TEST_PLAN.md), and pinned [GenLayer compatibility baseline](GENLAYER_COMPATIBILITY_BASELINE.md). Symbolic production limits require benchmarking; they are not evidence of feasibility.
 
 ## 1. Assets and exact accounting domains
 
 Stake and every bond are separate wei-denominated liabilities. `fee_bps` and `fee_wei` MUST be zero. There is no fee recipient, treasury liability, owner withdrawal, administrative sweep, or fee claim method.
 
-The closed `ActivityKind` enum is exactly `MARKET_CREATED | STAKE_ADDED | EVIDENCE_SUBMITTED | EVIDENCE_CLOSED | ATTEMPT_REQUESTED | ATTEMPT_SUCCEEDED | ATTEMPT_FAILED | ATTEMPT_EXPIRED | CHALLENGE_SUBMITTED | MARKET_FINALIZED | MARKET_CANCELLED | WINNINGS_CLAIMED | STAKE_REFUND_CLAIMED | CREATION_BOND_CLAIMED | CHALLENGE_BOND_CLAIMED | RETRY_BOND_CLAIMED`. Each successful public write commits exactly one record under the exhaustive [architecture mapping](V4_ARCHITECTURE.md#31-write-methods); a failed or reverted write commits none. The mapping is part of financial truth: only creation, stake, challenge, and retry records have nonzero received value, and only successfully transferred typed-claim records have nonzero paid value.
+The current candidate `ActivityKind` enum is `MARKET_CREATED | STAKE_ADDED | EVIDENCE_SUBMITTED | EVIDENCE_CLOSED | ATTEMPT_REQUESTED | ATTEMPT_SUCCEEDED | ATTEMPT_FAILED | ATTEMPT_EXPIRED | CHALLENGE_SUBMITTED | MARKET_FINALIZED | MARKET_CANCELLED | WINNINGS_CLAIMED | STAKE_REFUND_CLAIMED | CREATION_BOND_CLAIMED | CHALLENGE_BOND_CLAIMED | RETRY_BOND_CLAIMED`. Non-claim kinds and writes use the exhaustive closed [architecture mapping](V4_ARCHITECTURE.md#31-write-methods). The five claim kinds and current 27-branch total are conditional on Gate 5 proving the single-write model; otherwise activity timing/mapping and the total MUST be recalculated and independently reviewed before production coding. Only creation, stake, challenge, and retry records have nonzero received value, and only an observably completed claim payment may have nonzero paid value.
 
-The unsuffixed mathematical names below denote the corresponding exact `Market` fields ending in `_wei`; the contract-wide equation substitutes the six exact `protocol_*_wei` fields. At every observable committed state, per market and contract-wide:
+The unsuffixed mathematical names below denote the corresponding exact `Market` fields ending in `_wei`; the contract-wide equation substitutes the six exact `protocol_*_wei` fields. The current equation is conditional on Gate 5 proving atomic parent rollback. If deferred delivery requires an in-flight category, the schema and equation MUST be revised before implementation. Under the atomic candidate, at every observable committed state:
 
 `funds_received = funds_paid + stake_liability + locked_bond_liability + refundable_bond_liability + settlement_added_bond_liability`.
 
 - `funds_received`: successful stake and bond value accepted by the contract.
-- `funds_paid`: successfully transferred winnings, principal refunds, and returned bonds.
+- `funds_paid`: observably completed winnings, principal refunds, and returned bonds; deferred message emission alone is not payment.
 - `stake_liability`: stake-origin funds in the unsettled pool, winner settlement, or refund principal, exactly one category at a time; it excludes added challenge-bond origin.
 - `locked_bond_liability`: per-bond records with `LOCKED`.
 - `refundable_bond_liability`: per-bond records with `REFUNDABLE`.
@@ -34,7 +34,7 @@ There is no unattributed surplus. Feasibility gate 5 MUST establish whether unso
 | Zero winning pool with `T>0` | Principal refund; no division or forced redistribution. | No speculative winner payoff. |
 | Validator disagreement/malformed output | Closed output; malformed is failure, not `INVALID`; finite retry/refund path. | GenLayer transaction semantics require proof. |
 | Failed/indefinitely pending intelligent transaction | Durable request, expiry, stale guards, and hard backstop, all feasibility-gated. | Contract does not run automatically. |
-| Repeated claims/reentrancy | Pull claims, per-liability consumed state before transfer, reentrancy guard, rollback on failure. | Exact platform transfer behavior is a gate. |
+| Repeated claims/reentrancy | Gate 5-selected idempotency, explicit liability state, observable completion/failure, deterministic retry or reconciliation, and reentrancy safety. | Deferred external-message parent-state behavior is unresolved. |
 | Stale frontend | Contract authorization and address/version labels control; Activity is convenience only. | Accepted reads are not finality proof. |
 | Dishonest external URLs | Canonical policy says unauthenticated identifier only; no fetch/authentication claim. | Validator sees stored metadata, not page truth. |
 | Privileged abuse | No owner, guardian, pause, proxy, treasury, mutable config, or escrow escape. | Operational frontend aliases still require transparent controls. |
@@ -51,7 +51,7 @@ Protocol identities are uniformly one-based. Successful market, evidence, challe
 - `CONFIG_RETRY_BOND_WEI`: exact payable amount for every successor attempt. It is never forfeited or added.
 - Protocol fee: normatively zero. Nonzero fee design is rejected/deferred to a separately reviewed future contract version.
 
-`BondStatus` is exactly `NONE`, `LOCKED`, `REFUNDABLE`, `ADDED_TO_SETTLEMENT`, or `CLAIMED`.
+The candidate `BondStatus` is `NONE`, `LOCKED`, `REFUNDABLE`, `ADDED_TO_SETTLEMENT`, or `CLAIMED`. `CLAIMED` timing is conditional on Gate 5; an asynchronous/two-phase model may require additional independently reviewed statuses.
 
 | Bond/event | Exact transition | Beneficiary and claim |
 | --- | --- | --- |
@@ -73,11 +73,12 @@ If retry N fails, retry N+1 succeeds, and the market later finalizes, N's bond b
 For every bond:
 
 - original amount is immutable;
-- `CLAIMED` requires prior `REFUNDABLE` and paid amount equals original;
+- completed payment requires prior `REFUNDABLE` and paid amount equals original; the exact status transition is selected by Gate 5;
 - `ADDED_TO_SETTLEMENT` can only occur for challenge bonds and can never become `CLAIMED`;
-- state/liability changes occur before transfer and roll back on transfer failure; winner claims consume stake-origin liability first and then added bonds in ascending challenge-ID order, incrementing per-challenge settlement-paid accounting;
-- each `LOCKED->REFUNDABLE` challenge/retry transition increases the beneficiary's exact typed aggregate once, and each successful typed claim decreases it once; each aggregate equals the sum of that user's refundable per-bond records;
-- amounts paid to the beneficiary or onward to winners, plus locked, refundable, and settlement-added outstanding amounts, equal received exactly;
+- EOA/EVM payment uses a deferred ghost/EVM external message; no state/liability transition may assume synchronous call or same-write rollback;
+- Gate 5 MUST preserve winner stake-origin-first and ascending challenge-ID added-bond attribution, and select exact request, in-flight, paid, failed, retry, and reconciliation transitions;
+- each `LOCKED->REFUNDABLE` challenge/retry transition increases the beneficiary's exact outstanding liability once, and observable completion consumes it once without double claim or claim-order dependence;
+- amounts observably paid plus locked, refundable, settlement-added, and any Gate 5-required in-flight liabilities equal received exactly;
 - unclaimed refundable amounts remain permanently assigned.
 
 ## 4. Settlement mathematics
@@ -100,9 +101,9 @@ These return the quotient and remainder of the conceptual at-least-512-bit produ
 
 Every cancellation with `T>0` stores `REFUNDABLE/REFUNDS`, null outcome, stake pool and refundable principal equal to `T`, and zero winning pool, bond bonus, and distributable amount. Every cancellation with `T=0` stores `CANCELLED/EMPTY_CANCEL`, null outcome, and zero for every settlement amount. In either case `claims_open_at=terminal_at`, no winner allocation exists, and all independently refundable bonds remain available only through their typed claims.
 
-A second claim rejects. Failed transfer does not consume a claim. Users who never claim retain assigned liabilities without expiry or sweep. Leaderboard credit is the exact amount actually transferred by successful `claim_winnings`, including allocated added bonds and rounding wei; it excludes stake refunds and all returned bonds. The stored leaderboard is maintained atomically in descending paid-winnings order with ascending unsigned address ties and one-based ranks; no view-time sort is allowed. Gate 9 must prove the worst-case claim-time reposition at the selected capacity.
+The Gate 5-selected model MUST prevent a second economic payment and MUST preserve or deterministically reconcile liability after external-message failure; synchronous claim rollback is not assumed. Users who never complete a claim retain assigned liabilities without expiry or sweep. Leaderboard credit is the exact observably completed `claim_winnings` payment, including allocated added bonds and rounding wei; it excludes stake refunds and returned bonds. Whether leaderboard mutation occurs in the request or completion/reconciliation step is Gate 5 conditional. Stored ordering remains descending paid winnings with ascending unsigned-address ties and one-based ranks; Gate 9 must prove the worst-case update at the selected capacity.
 
-At winner settlement, outstanding `stake_liability=T` and `settlement_added_bond_liability=B`, while assigned payouts total `T+B`. Finalization scans the immutable first-stake participant array once, ignores zero winning-side stakes, ranks by remainder/address, writes every exact `winning_allocation_wei`, proves their sum, and only then opens claims. A winning claim reads one stored allocation and reduces stake origin first by `min(payout, remaining stake_liability)` and then added-bond origin in ascending challenge-ID order; it never rescans participants.
+At winner settlement, outstanding `stake_liability=T` and `settlement_added_bond_liability=B`, while assigned payouts total `T+B`. Finalization scans the immutable first-stake participant array once, ignores zero winning-side stakes, ranks by remainder/address, writes every exact `winning_allocation_wei`, proves their sum, and only then opens eligibility. A winning payout reads one stored allocation and preserves stake-origin-first, then ascending challenge-ID added-bond attribution without rescanning participants. Gate 5 selects when those liabilities move to in-flight or paid categories.
 
 No V4 production-contract coding may begin until an isolated prototype proves the exact participant array/mapping layout, full-precision arithmetic, and maximum-position finalization scan/allocation writes. Test deployment remains blocked until the selected hard cap fits practical GenLayer limits with documented safety margin. Bounded-but-too-large is still unsafe.
 
@@ -164,16 +165,16 @@ Those numeric IDs are one-based: valid markets are `1..market_count`; evidence/c
 
 Every stored contract timestamp and ABI timestamp is `Timestamp=uint64`. Runtime contract time must convert exactly; all additions/subtractions are checked against `MAX_UINT64`. Gates 6 and 10 must prove the platform representation, deterministic conversion, storage, comparison, and arithmetic before production-contract coding.
 
-Activity classification never follows an implementation-selected economic interpretation. An atomic `retry_resolution` records only `ATTEMPT_REQUESTED` for the paid successor retry; its internal predecessor expiry has no second record. Every `finalize_market` result, including empty cancellation and zero-winning-pool refund, records `MARKET_FINALIZED`; only `cancel_market` records `MARKET_CANCELLED`. Claim transfer failure rolls back both the financial mutation and activity record. The unchanged checked capacity `4 + max_stake_calls_per_market + max_evidence + 3*A + 2*max_challenges + max_positions`, where `A` is the sum of both attempt caps, conservatively covers exactly one record per successful public write because compound expiry materialization consumes no additional record.
+Activity classification never follows an implementation-selected economic interpretation. An atomic `retry_resolution` records only `ATTEMPT_REQUESTED` for the paid successor retry; its internal predecessor expiry has no second record. Every `finalize_market` result, including empty cancellation and zero-winning-pool refund, records `MARKET_FINALIZED`; only `cancel_market` records `MARKET_CANCELLED`. Claim-side activity timing and failure/reconciliation records are Gate 5 conditional. The current checked capacity `4 + max_stake_calls_per_market + max_evidence + 3*A + 2*max_challenges + max_positions`, where `A` is the sum of both attempt caps, is valid only if Gate 5 proves the single-record claim projection; otherwise it MUST be recomputed after activity redesign.
 
 ## 7. Security invariants by domain
 
 ### Fund safety
 
-- Exact conservation equality always holds; no fee/surplus/treasury category exists.
+- Exact conservation MUST hold under the Gate 5-selected outstanding/in-flight/paid categories; no fee or treasury category exists, and any forced-inbound surplus requires the already specified quarantine revision.
 - Precomputed winner allocations never exceed or fall short of `T+B`; refund principal equals contributions; empty finalization creates no stake claim.
-- Every accepted wei has exactly one current category and ultimate assigned disposition.
-- Pull claims, state-before-transfer, reentrancy protection, and rollback prevent duplicate loss.
+- Every accepted wei has exactly one current category and ultimate assigned disposition, including any Gate 5-required in-flight state.
+- Gate 5 MUST prove one economic payment, no double claim, no lost liability, observable failure, deterministic retry/reconciliation, and reentrancy safety.
 
 ### State-transition safety
 

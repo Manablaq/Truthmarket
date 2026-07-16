@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import { createAccount, createClient } from "genlayer-js";
 import { testnetBradbury } from "genlayer-js/chains";
-import { TransactionStatus } from "genlayer-js/types";
+import { TransactionHashVariant, TransactionStatus } from "genlayer-js/types";
 import { parseEther } from "viem";
 
 const PRIVATE_KEY_PATTERN = /^0x[0-9a-fA-F]{64}$/;
@@ -209,7 +209,7 @@ async function readMarkets(label, contractAddress) {
       address: contractAddress,
       functionName: "list_markets",
       args: [],
-      stateStatus: "accepted",
+      transactionHashVariant: TransactionHashVariant.LATEST_NONFINAL,
     });
 
     try {
