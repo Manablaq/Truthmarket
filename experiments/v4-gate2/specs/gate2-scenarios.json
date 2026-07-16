@@ -1,0 +1,269 @@
+{
+  "schema_version": 1,
+  "mandatory_scenario_count": 19,
+  "authoritative_success": {
+    "statusName": "FINALIZED",
+    "txExecutionResultName": "FINISHED_WITH_RETURN"
+  },
+  "authoritative_serial_rejection": {
+    "statusName": "FINALIZED",
+    "preferred_txExecutionResultName": "FINISHED_WITH_ERROR",
+    "wrong_failure_causes": [
+      "WRAPPER",
+      "BALANCE",
+      "NONCE",
+      "SCHEMA",
+      "AUTHORIZATION",
+      "RPC"
+    ]
+  },
+  "mandatory_overlap_assertions": [
+    {"id": "ORDERING_PROVED", "classification": "EVIDENCE", "false_status": "INCONCLUSIVE"},
+    {"id": "OLD_PATH_ENTERED", "classification": "EVIDENCE", "false_status": "INCONCLUSIVE"},
+    {"id": "NO_STALE_MUTATION", "classification": "INVARIANT", "false_status": "FAIL"},
+    {"id": "SUCCESSOR_REMAINS_EXECUTABLE", "classification": "INVARIANT", "false_status": "FAIL"},
+    {"id": "SUCCESSOR_STATE_UNCHANGED", "classification": "INVARIANT", "false_status": "FAIL"},
+    {"id": "FINAL_STATE_STABLE", "classification": "EVIDENCE", "false_status": "INCONCLUSIVE"}
+  ],
+  "deployment_isolation": [
+    {"family": "BASELINE_DUPLICATE_DISTINCT_EXECUTOR", "scenario_ids": ["G2-S01-BASELINE-REQUEST", "G2-S02-CURRENT-EXECUTION", "G2-S03-DUPLICATE-EXECUTION", "G2-S17-DISTINCT-EXECUTOR"], "fresh_deployment": true},
+    {"family": "TWO_ATTEMPT_STALE_BEFORE_SUCCESS", "scenario_ids": ["G2-S04-EXPIRE-ATTEMPT", "G2-S05-RETRY-SUCCESSOR", "G2-S06-STALE-AFTER-SUCCESSOR-CREATION", "G2-S07-SUCCESSOR-AFTER-STALE-CALLS"], "fresh_deployment": true},
+    {"family": "SUCCESSFUL_SUCCESSOR_PROTECTION", "scenario_ids": ["G2-S08-STALE-AFTER-SUCCESSOR-SUCCEEDED"], "fresh_deployment": true},
+    {"family": "THREE_ATTEMPT_ORDERING", "scenario_ids": ["G2-S09-THREE-ATTEMPT-ORDERING"], "fresh_deployment": true},
+    {"family": "CANCELLATION", "scenario_ids": ["G2-S10-CANCELLED-STATE-PRECEDENCE"], "fresh_deployment": true},
+    {"family": "PROBE_TERMINALIZATION", "scenario_ids": ["G2-S11-TERMINAL-STATE-PRECEDENCE"], "fresh_deployment": true},
+    {"family": "INVALID_IDS_ALLOCATION", "scenario_ids": ["G2-S12-ZERO-ID", "G2-S13-NEGATIVE-ID", "G2-S14-MISSING-OR-FUTURE-ID", "G2-S15-ALLOCATION-ROLLBACK"], "fresh_deployment": true},
+    {"family": "COMPETING_RETRY", "scenario_ids": ["G2-S16-COMPETING-RETRY"], "fresh_deployment": true},
+    {"family": "OVERLAP_TRIAL_1", "scenario_ids": ["G2-S18-LIVE-OVERLAP"], "trial_id": "G2-OVERLAP-T1", "fresh_deployment": true},
+    {"family": "OVERLAP_TRIAL_2", "scenario_ids": ["G2-S18-LIVE-OVERLAP"], "trial_id": "G2-OVERLAP-T2", "fresh_deployment": true},
+    {"family": "OVERLAP_TRIAL_3", "scenario_ids": ["G2-S18-LIVE-OVERLAP"], "trial_id": "G2-OVERLAP-T3", "fresh_deployment": true}
+  ],
+  "scenarios": [
+    {
+      "id": "G2-S01-BASELINE-REQUEST",
+      "starting_state": {"fixture": "EMPTY_ACTIVE"},
+      "operations": [{"method": "request_probe", "args": [11]}],
+      "expected_authoritative_category": "FINALIZED_SUCCESS",
+      "allowed_mutations": ["request_count", "latest_request_id", "requests[1]", "derived_active_attempt_id"],
+      "forbidden_mutations": ["lifecycle_status", "current_value", "execution_count"],
+      "required_snapshots": ["BEFORE_FINAL", "AFTER_FINAL"],
+      "status_rules": {"pass": "ID_1_REQUESTED_AND_UNIQUELY_ACTIVE", "fail": "ALLOCATION_OR_ACTIVE_INVARIANT_VIOLATED", "inconclusive": "AUTHORITATIVE_FINAL_STATE_UNAVAILABLE", "not_run": "REQUEST_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_SERIAL_GUARD", "FAIL_MULTIPLE_ACTIVE_ATTEMPTS", "INCONCLUSIVE_FINAL_STATE_UNSTABLE", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S02-CURRENT-EXECUTION",
+      "starting_state": {"fixture": "ONE_REQUESTED", "candidate_value": 11},
+      "operations": [{"method": "execute_probe", "args": [1]}],
+      "expected_authoritative_category": "FINALIZED_SUCCESS",
+      "allowed_mutations": ["requests[1].status", "current_value", "execution_count", "derived_active_attempt_id"],
+      "forbidden_mutations": ["request_count", "latest_request_id", "lifecycle_status", "requests[1].candidate_value", "requests[1].predecessor_id"],
+      "required_snapshots": ["BEFORE_FINAL", "AFTER_FINAL"],
+      "status_rules": {"pass": "EXACT_SUCCESS_MUTATION_SET", "fail": "SUCCESS_MUTATION_SET_DIFFERS", "inconclusive": "AUTHORITATIVE_RESULT_UNAVAILABLE", "not_run": "EXECUTION_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_CURRENT_EXECUTION", "FAIL_STALE_MUTATION", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S03-DUPLICATE-EXECUTION",
+      "starting_state": {"fixture": "ONE_SUCCEEDED"},
+      "operations": [{"method": "execute_probe", "args": [1]}],
+      "expected_authoritative_category": "FINALIZED_STALE_REJECTION",
+      "allowed_mutations": [],
+      "forbidden_mutations": ["COMPLETE_CANONICAL_STATE"],
+      "required_snapshots": ["BEFORE_FINAL", "AFTER_FINAL", "BYTE_EQUALITY"],
+      "status_rules": {"pass": "STALE_SPECIFIC_REJECTION_AND_EXACT_EQUALITY", "fail": "ANY_MUTATION", "inconclusive": "WRONG_OR_UNKNOWN_RESULT", "not_run": "DUPLICATE_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_SERIAL_GUARD", "FAIL_DUPLICATE_MUTATION", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S04-EXPIRE-ATTEMPT",
+      "starting_state": {"fixture": "ONE_REQUESTED"},
+      "operations": [{"method": "expire_probe", "args": [1]}],
+      "expected_authoritative_category": "FINALIZED_SUCCESS",
+      "allowed_mutations": ["requests[1].status", "derived_active_attempt_id"],
+      "forbidden_mutations": ["request_count", "latest_request_id", "lifecycle_status", "current_value", "execution_count", "requests[1].candidate_value", "requests[1].predecessor_id"],
+      "required_snapshots": ["BEFORE_FINAL", "AFTER_FINAL"],
+      "status_rules": {"pass": "EXACT_REQUESTED_TO_EXPIRED", "fail": "UNAUTHORIZED_EXPIRY_MUTATION", "inconclusive": "AUTHORITATIVE_RESULT_UNAVAILABLE", "not_run": "EXPIRY_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_SERIAL_GUARD", "FAIL_STALE_MUTATION", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S05-RETRY-SUCCESSOR",
+      "starting_state": {"fixture": "ONE_EXPIRED"},
+      "operations": [{"method": "retry_probe", "args": [1, 22]}],
+      "expected_authoritative_category": "FINALIZED_SUCCESS",
+      "allowed_mutations": ["request_count", "latest_request_id", "requests[2]", "derived_active_attempt_id"],
+      "forbidden_mutations": ["lifecycle_status", "current_value", "execution_count", "requests[1]"],
+      "required_snapshots": ["BEFORE_FINAL", "AFTER_FINAL"],
+      "status_rules": {"pass": "SUCCESSOR_2_REQUESTED_WITH_PREDECESSOR_1_AND_UNIQUELY_ACTIVE", "fail": "ANCESTRY_OR_ACTIVE_INVARIANT_VIOLATED", "inconclusive": "AUTHORITATIVE_RESULT_UNAVAILABLE", "not_run": "RETRY_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_RETRY_SUCCESSOR", "FAIL_MULTIPLE_ACTIVE_ATTEMPTS", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S06-STALE-AFTER-SUCCESSOR-CREATION",
+      "starting_state": {"fixture": "EXPIRED_1_REQUESTED_2"},
+      "operations": [{"method": "execute_probe", "args": [1]}],
+      "expected_authoritative_category": "FINALIZED_STALE_REJECTION",
+      "allowed_mutations": [],
+      "forbidden_mutations": ["COMPLETE_CANONICAL_STATE"],
+      "required_snapshots": ["BEFORE_FINAL", "AFTER_FINAL", "BYTE_EQUALITY"],
+      "status_rules": {"pass": "STALE_1_REJECTS_AND_2_REMAINS_ACTIVE", "fail": "STALE_MUTATION_OR_SUCCESSOR_OVERWRITE", "inconclusive": "WRONG_OR_UNKNOWN_RESULT", "not_run": "STALE_EXECUTION_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_SERIAL_GUARD", "FAIL_STALE_MUTATION", "FAIL_SUCCESSOR_OVERWRITTEN", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S07-SUCCESSOR-AFTER-STALE-CALLS",
+      "starting_state": {"fixture": "EXPIRED_1_REQUESTED_2_AFTER_STALE_REJECTION"},
+      "operations": [{"method": "execute_probe", "args": [2]}],
+      "expected_authoritative_category": "FINALIZED_SUCCESS",
+      "allowed_mutations": ["requests[2].status", "current_value", "execution_count", "derived_active_attempt_id"],
+      "forbidden_mutations": ["request_count", "latest_request_id", "lifecycle_status", "requests[1]", "requests[2].candidate_value", "requests[2].predecessor_id"],
+      "required_snapshots": ["BEFORE_FINAL", "AFTER_FINAL"],
+      "status_rules": {"pass": "SUCCESSOR_SUCCEEDS_EXACTLY_ONCE", "fail": "STALE_CALL_BLOCKED_SUCCESSOR_OR_WRONG_MUTATION", "inconclusive": "AUTHORITATIVE_RESULT_UNAVAILABLE", "not_run": "SUCCESSOR_EXECUTION_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_RETRY_SUCCESSOR", "FAIL_SUCCESSOR_BLOCKED", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S08-STALE-AFTER-SUCCESSOR-SUCCEEDED",
+      "starting_state": {"fixture": "EMPTY_ACTIVE_FRESH_DEPLOYMENT"},
+      "operations": [
+        {"step": "CREATE_PREDECESSOR_N", "method": "request_probe", "args": [11], "bind_return": "N"},
+        {"step": "EXPIRE_N", "method": "expire_probe", "args_from_bindings": ["N"]},
+        {"step": "CREATE_SUCCESSOR_N_PLUS_1", "method": "retry_probe", "args_from_bindings": ["N"], "literal_args": [22], "bind_return": "N_PLUS_1", "require_predecessor_binding": "N"},
+        {"step": "VERIFY_SUCCESSOR_UNIQUELY_ACTIVE", "assertion": "derived_active_attempt_id == N_PLUS_1"},
+        {"step": "EXECUTE_SUCCESSOR", "method": "execute_probe", "args_from_bindings": ["N_PLUS_1"], "bind_transaction": "SUCCESSOR_SUCCESS_TRANSACTION"},
+        {"step": "VERIFY_SUCCESSOR_SUCCEEDED", "assertion": "requests[N_PLUS_1].status == SUCCEEDED"},
+        {"step": "FREEZE_SUCCESSFUL_SUCCESSOR", "snapshot": "SUCCESSFUL_SUCCESSOR_BEFORE_FINAL"},
+        {"step": "EXECUTE_STALE_PREDECESSOR", "method": "execute_probe", "args_from_bindings": ["N"], "bind_transaction": "STALE_PREDECESSOR_TRANSACTION", "expected": "FINALIZED_STALE_REJECTION"},
+        {"step": "FREEZE_AFTER_STALE", "snapshot": "AFTER_STALE_FINAL"},
+        {"step": "VERIFY_COMPLETE_EQUALITY", "assertion": "SUCCESSFUL_SUCCESSOR_BEFORE_FINAL byte-and-digest equals AFTER_STALE_FINAL"}
+      ],
+      "expected_authoritative_category": "FINALIZED_STALE_REJECTION",
+      "allowed_mutations": [],
+      "forbidden_mutations": ["COMPLETE_CANONICAL_STATE"],
+      "required_snapshots": ["SUCCESSFUL_SUCCESSOR_BEFORE_FINAL", "AFTER_STALE_FINAL", "BYTE_EQUALITY", "DIGEST_EQUALITY"],
+      "status_rules": {"pass": "STALE_SPECIFIC_REJECTION_AND_SUCCESSFUL_SUCCESSOR_BYTE_IDENTICAL", "fail": "STALE_MUTATION_OR_SUCCESSOR_OVERWRITE", "inconclusive": "WRONG_OR_UNKNOWN_RESULT", "not_run": "POST_SUCCESS_STALE_EXECUTION_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_SUCCESSFUL_SUCCESSOR_PROTECTED", "FAIL_STALE_MUTATION", "FAIL_SUCCESSOR_OVERWRITTEN", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S09-THREE-ATTEMPT-ORDERING",
+      "starting_state": {"fixture": "EMPTY_ACTIVE"},
+      "operations": [{"method": "request_probe", "args": [11]}, {"method": "expire_probe", "args": [1]}, {"method": "retry_probe", "args": [1, 22]}, {"method": "expire_probe", "args": [2]}, {"method": "retry_probe", "args": [2, 33]}, {"method": "execute_probe", "args": [2]}, {"method": "execute_probe", "args": [1]}, {"method": "execute_probe", "args": [3]}],
+      "expected_authoritative_category": "MIXED_FINALIZED_WITH_ONLY_ATTEMPT_3_SUCCESS",
+      "allowed_mutations": ["requests[3].status", "current_value", "execution_count", "derived_active_attempt_id"],
+      "forbidden_mutations": ["STALE_EXECUTION_MUTATIONS", "MULTIPLE_ACTIVE_ATTEMPTS", "ANCESTRY_CHANGES"],
+      "required_snapshots": ["AFTER_EACH_FINALIZED_OPERATION"],
+      "status_rules": {"pass": "ONLY_ATTEMPT_3_MUTATES_EXECUTION_STATE", "fail": "STALE_OR_MULTIPLE_ACTIVE_MUTATION", "inconclusive": "FINALIZED_TIMELINE_INCOMPLETE", "not_run": "MANDATORY_OPERATION_MISSING"},
+      "reason_codes": ["PASS_SERIAL_GUARD", "FAIL_STALE_MUTATION", "FAIL_MULTIPLE_ACTIVE_ATTEMPTS", "INCONCLUSIVE_FINAL_STATE_UNSTABLE", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S10-CANCELLED-STATE-PRECEDENCE",
+      "starting_state": {"fixture": "ONE_REQUESTED"},
+      "operations": [{"method": "cancel_probe", "args": []}, {"method": "execute_probe", "args": [1]}],
+      "expected_authoritative_category": "FINALIZED_CANCELLATION_THEN_FINALIZED_STALE_REJECTION",
+      "allowed_mutations": ["lifecycle_status", "derived_active_attempt_id"],
+      "forbidden_mutations": ["POST_CANCELLATION_COMPLETE_CANONICAL_STATE"],
+      "required_snapshots": ["BEFORE_CANCELLATION", "AFTER_CANCELLATION_FINAL", "AFTER_STALE_FINAL", "POST_CANCELLATION_BYTE_EQUALITY"],
+      "status_rules": {"pass": "FINALIZED_CANCELLATION_NOT_REVIVED", "fail": "CANCELLED_STATE_REVIVED_OR_MUTATED", "inconclusive": "AUTHORITATIVE_RESULT_UNAVAILABLE", "not_run": "CANCELLATION_OR_STALE_ACTION_MISSING"},
+      "reason_codes": ["PASS_SERIAL_GUARD", "FAIL_CANCELLED_REVIVED", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S11-TERMINAL-STATE-PRECEDENCE",
+      "starting_state": {"fixture": "ONE_REQUESTED"},
+      "operations": [{"method": "terminalize_probe", "args": []}, {"method": "execute_probe", "args": [1]}],
+      "expected_authoritative_category": "FINALIZED_PROBE_TERMINAL_THEN_FINALIZED_STALE_REJECTION",
+      "allowed_mutations": ["lifecycle_status", "derived_active_attempt_id"],
+      "forbidden_mutations": ["POST_TERMINAL_COMPLETE_CANONICAL_STATE"],
+      "required_snapshots": ["BEFORE_TERMINAL", "AFTER_TERMINAL_FINAL", "AFTER_STALE_FINAL", "POST_TERMINAL_BYTE_EQUALITY"],
+      "status_rules": {"pass": "PROBE_TERMINAL_STATE_NOT_REVIVED", "fail": "TERMINAL_STATE_REVIVED_OR_MUTATED", "inconclusive": "AUTHORITATIVE_RESULT_UNAVAILABLE", "not_run": "TERMINAL_OR_STALE_ACTION_MISSING"},
+      "reason_codes": ["PASS_SERIAL_GUARD", "FAIL_TERMINAL_REVIVED", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S12-ZERO-ID",
+      "starting_state": {"fixture": "ONE_REQUESTED"},
+      "operations": [{"method": "execute_probe", "args": [0]}],
+      "expected_authoritative_category": "FINALIZED_INVALID_ID_REJECTION",
+      "allowed_mutations": [],
+      "forbidden_mutations": ["COMPLETE_CANONICAL_STATE"],
+      "required_snapshots": ["BEFORE_FINAL", "AFTER_FINAL", "BYTE_EQUALITY"],
+      "status_rules": {"pass": "ZERO_REJECTS_WITH_NO_MUTATION", "fail": "INVALID_ID_MUTATION", "inconclusive": "WRONG_OR_UNKNOWN_RESULT", "not_run": "INVALID_CALL_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_SERIAL_GUARD", "FAIL_INVALID_ID_MUTATION", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S13-NEGATIVE-ID",
+      "starting_state": {"fixture": "ONE_REQUESTED"},
+      "operations": [{"method": "execute_probe", "args": [-1]}],
+      "expected_authoritative_category": "FINALIZED_INVALID_ID_REJECTION",
+      "allowed_mutations": [],
+      "forbidden_mutations": ["COMPLETE_CANONICAL_STATE"],
+      "required_snapshots": ["BEFORE_FINAL", "AFTER_FINAL", "BYTE_EQUALITY"],
+      "status_rules": {"pass": "NEGATIVE_REJECTS_WITH_NO_MUTATION", "fail": "INVALID_ID_MUTATION", "inconclusive": "WRONG_OR_UNKNOWN_RESULT", "not_run": "INVALID_CALL_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_SERIAL_GUARD", "FAIL_INVALID_ID_MUTATION", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S14-MISSING-OR-FUTURE-ID",
+      "starting_state": {"fixture": "ONE_REQUESTED"},
+      "operations": [{"method": "execute_probe", "args": [2]}, {"method": "execute_probe", "args": [9007199254740991]}],
+      "expected_authoritative_category": "FINALIZED_INVALID_ID_REJECTIONS",
+      "allowed_mutations": [],
+      "forbidden_mutations": ["COMPLETE_CANONICAL_STATE"],
+      "required_snapshots": ["BEFORE_EACH_FINAL", "AFTER_EACH_FINAL", "BYTE_EQUALITY"],
+      "status_rules": {"pass": "ALL_UNKNOWN_IDS_REJECT_WITH_NO_MUTATION", "fail": "INVALID_ID_MUTATION", "inconclusive": "WRONG_OR_UNKNOWN_RESULT", "not_run": "MANDATORY_INVALID_CALL_MISSING"},
+      "reason_codes": ["PASS_SERIAL_GUARD", "FAIL_INVALID_ID_MUTATION", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S15-ALLOCATION-ROLLBACK",
+      "starting_state": {"fixture": "EMPTY_ACTIVE"},
+      "operations": [{"method": "request_probe", "args": [{"decimal_metadata": "9007199254740992", "semantic_role": "candidate_value_out_of_range", "is_contract_integer": false}], "must_reject_before_canonical_state_payload": true, "must_not_submit_contract_write": true}, {"method": "request_probe", "args": [11]}],
+      "expected_authoritative_category": "LOCAL_INVALID_INTEGER_REJECTION_THEN_FINALIZED_SUCCESS_ID_1",
+      "allowed_mutations": ["SECOND_VALID_REQUEST_ONLY"],
+      "forbidden_mutations": ["FAILED_REQUEST_ID_OR_COUNTER_CONSUMPTION"],
+      "required_snapshots": ["BEFORE_REJECTION", "AFTER_REJECTION_EQUAL", "AFTER_VALID_FINAL"],
+      "status_rules": {"pass": "DECIMAL_METADATA_IS_NOT_A_CONTRACT_ARGUMENT_OR_CANONICAL_STATE_VALUE_REJECTION_CONSUMES_NO_ID_AND_NEXT_VALID_ID_IS_1", "fail": "INVALID_METADATA_SUBMITTED_OR_REJECTION_CONSUMES_ID_OR_COUNTER", "inconclusive": "AUTHORITATIVE_VALID_RESULT_UNAVAILABLE", "not_run": "INVALID_INPUT_CHECK_OR_VALID_REQUEST_MISSING"},
+      "reason_codes": ["PASS_SERIAL_GUARD", "FAIL_ALLOCATION_CONSUMED_ON_REJECTION", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S16-COMPETING-RETRY",
+      "starting_state": {"fixture": "ONE_EXPIRED"},
+      "operations": [{"method": "retry_probe", "args": [1, 22]}, {"method": "retry_probe", "args": [1, 33]}],
+      "expected_authoritative_category": "ONE_FINALIZED_SUCCESS_ONE_FINALIZED_REJECTION",
+      "allowed_mutations": ["ONE_SUCCESSOR_ONLY"],
+      "forbidden_mutations": ["SECOND_SUCCESSOR", "MULTIPLE_ACTIVE_ATTEMPTS", "SECOND_ID_CONSUMPTION"],
+      "required_snapshots": ["BEFORE_RETRIES", "AFTER_EACH_FINALIZED_RETRY"],
+      "status_rules": {"pass": "EXACTLY_ONE_SUCCESSOR_AND_ONE_ACTIVE", "fail": "MULTIPLE_ACTIVE_SUCCESSORS_OR_ID_GAP", "inconclusive": "AUTHORITATIVE_ORDER_OR_RESULT_UNAVAILABLE", "not_run": "ONE_RETRY_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_RETRY_SUCCESSOR", "FAIL_MULTIPLE_ACTIVE_ATTEMPTS", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S17-DISTINCT-EXECUTOR",
+      "starting_state": {"fixture": "ONE_REQUESTED", "requester_address": "ADDRESS_A"},
+      "operations": [{"method": "execute_probe", "args": [1], "sender": "ADDRESS_B"}],
+      "expected_authoritative_category": "FINALIZED_SUCCESS_FROM_DISTINCT_ADDRESS",
+      "allowed_mutations": ["requests[1].status", "current_value", "execution_count", "derived_active_attempt_id"],
+      "forbidden_mutations": ["CALLER_AUTHORIZATION_STATE", "REQUESTER_OR_EXECUTOR_STORAGE"],
+      "required_snapshots": ["BEFORE_FINAL", "AFTER_FINAL", "TRANSACTION_SENDERS"],
+      "status_rules": {"pass": "DISTINCT_EXECUTOR_SUCCEEDS_WITH_EXACT_MUTATIONS", "fail": "PERMISSIONLESS_EXECUTION_BLOCKED_OR_WRONG_MUTATION", "inconclusive": "DISTINCT_IDENTITY_OR_FINAL_RESULT_UNAVAILABLE", "not_run": "DISTINCT_EXECUTION_NOT_SUBMITTED"},
+      "reason_codes": ["PASS_CURRENT_EXECUTION", "FAIL_SUCCESSOR_BLOCKED", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING"]
+    },
+    {
+      "id": "G2-S18-LIVE-OVERLAP",
+      "starting_state": {"fixture": "FRESH_DEPLOYMENT_PER_TRIAL"},
+      "operations": [{"method": "PREDECLARE_EXACT_TRIALS", "args": ["G2-OVERLAP-T1", "G2-OVERLAP-T2", "G2-OVERLAP-T3"]}, {"method": "SUBMIT_OLD_EXECUTION_CAPTURE_HASH", "args": []}, {"method": "AUTHORITATIVE_EXPIRE_AND_RETRY", "args": []}, {"method": "OBSERVE_AUTHORITATIVE_OLD_RESULT", "args": []}, {"method": "EXECUTE_SUCCESSOR", "args": []}],
+      "expected_authoritative_category": "MECHANICALLY_AGGREGATED_THREE_TRIAL_RESULT",
+      "allowed_mutations": ["INVALIDATION_AND_SUCCESSOR_CREATION", "LATER_SUCCESSOR_EXECUTION"],
+      "forbidden_mutations": ["STALE_OLD_EXECUTION_PROTECTED_MUTATIONS", "TRIAL_REPLACEMENT", "TRANSACTION_RESUBMISSION"],
+      "required_snapshots": ["BEFORE_OLD_SUBMISSION", "SUCCESSOR_AUTHORITATIVE_FINAL", "AFTER_OLD_AUTHORITATIVE_RESULT_FINAL", "AFTER_SUCCESSOR_EXECUTION_FINAL"],
+      "status_rules": {"pass": "AT_LEAST_ONE_PROVED_ORDER_NO_MUTATION_AND_REMAINDER_PASS_OR_INCONCLUSIVE", "fail": "ANY_PROVED_ORDER_STALE_MUTATION", "inconclusive": "THREE_TRIALS_RUN_BUT_NO_ORDER_PROVED", "not_run": "ANY_TRIAL_NOT_RUN", "request_changes": "TRIAL_SET_OR_EVIDENCE_STRUCTURALLY_INVALID"},
+      "reason_codes": ["PASS_OVERLAP_ORDER_PROVED_NO_MUTATION", "FAIL_STALE_MUTATION", "FAIL_SUCCESSOR_OVERWRITTEN", "FAIL_SUCCESSOR_BLOCKED", "INCONCLUSIVE_ORDER_NOT_PROVED", "INCONCLUSIVE_OLD_PATH_NOT_PROVED", "INCONCLUSIVE_FINAL_STATE_UNSTABLE", "INCONCLUSIVE_TRACE_UNAVAILABLE", "NOT_RUN_SETUP_FAILED", "NOT_RUN_SUBMISSION_FAILED", "REQUEST_CHANGES_MISSING_TRIAL", "REQUEST_CHANGES_EXTRA_TRIAL", "REQUEST_CHANGES_DUPLICATE_TRIAL", "REQUEST_CHANGES_DISCARDED_TRIAL", "REQUEST_CHANGES_UNVERIFIED_TRIAL", "REQUEST_CHANGES_ASSERTION_INVENTORY_INVALID", "REQUEST_CHANGES_SNAPSHOT_CLAIM_INVALID"],
+      "trials": [
+        {"trial_id": "G2-OVERLAP-T1", "predeclared_index": 1, "fresh_deployment": true},
+        {"trial_id": "G2-OVERLAP-T2", "predeclared_index": 2, "fresh_deployment": true},
+        {"trial_id": "G2-OVERLAP-T3", "predeclared_index": 3, "fresh_deployment": true}
+      ],
+      "aggregation_precedence": ["FAIL", "REQUEST_CHANGES", "NOT_RUN", "PASS_IF_ANY_PASS_AND_REST_PASS_OR_INCONCLUSIVE", "INCONCLUSIVE_IF_ALL_INCONCLUSIVE"]
+    },
+    {
+      "id": "G2-S19-COMPLETE-EVIDENCE",
+      "starting_state": {"fixture": "ALL_MANDATORY_SCENARIOS_COMPLETE"},
+      "operations": [{"method": "VERIFY_EVIDENCE_BUNDLE", "args": ["EXTERNAL_REVIEWED_COMMIT", "EXTERNAL_BUNDLE_SHA256"]}],
+      "expected_authoritative_category": "OFFLINE_VERIFIER_SUCCESS",
+      "allowed_mutations": [],
+      "forbidden_mutations": ["EVIDENCE_EDIT", "MANUAL_VERDICT_OVERRIDE", "MISSING_ARTIFACT"],
+      "required_snapshots": ["ALL_RAW_CANONICAL_STATES", "ALL_DIGESTS", "ALL_TRANSACTION_TIMELINES", "ALL_ARTIFACT_HASHES"],
+      "status_rules": {"pass": "ALL_SCENARIOS_PRESENT_AND_VERIFIER_REPRODUCES_VERDICT", "fail": "UNDERLYING_INVARIANT_FAILURE", "inconclusive": "AUTHORITATIVE_PLATFORM_EVIDENCE_UNAVAILABLE", "not_run": "MANDATORY_SCENARIO_NOT_RUN", "request_changes": "SCHEMA_INTEGRITY_OR_VERIFIER_MISMATCH"},
+      "reason_codes": ["PASS_COMPLETE_EVIDENCE", "FAIL_STALE_MUTATION", "INCONCLUSIVE_PLATFORM_RESULT_UNKNOWN", "NOT_RUN_MANDATORY_ACTION_MISSING", "REQUEST_CHANGES_SCHEMA_INVALID", "REQUEST_CHANGES_VERDICT_MISMATCH", "REQUEST_CHANGES_TRUST_ANCHOR_MISMATCH"]
+    }
+  ]
+}
