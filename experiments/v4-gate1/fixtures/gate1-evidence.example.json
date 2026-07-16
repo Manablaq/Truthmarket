@@ -1,0 +1,20 @@
+{
+  "verdict": "GATE 1 INCONCLUSIVE",
+  "sourceCommit": "625bbe5fb53d8cdafe55c8879bae987698711215",
+  "network": {
+    "name": "Genlayer Bradbury Testnet",
+    "chainId": 4221,
+    "rpc": "https://rpc-bradbury.genlayer.com"
+  },
+  "sourceCodeSha256": null,
+  "requester": null,
+  "executor": null,
+  "deployment": null,
+  "request": null,
+  "execution": null,
+  "duplicateExecution": null,
+  "invalidRequest": null,
+  "limitations": [
+    "Example schema only; this file is not live evidence."
+  ]
+}
