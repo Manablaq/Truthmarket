@@ -1,14 +1,14 @@
 # TruthMarket V4 test plan
 
-Status: **proposed test plan for an unimplemented and undeployed V4**. It is normative with the [architecture](V4_ARCHITECTURE.md), [state machine](V4_STATE_MACHINE.md), [economics and safety](V4_ECONOMICS_AND_SAFETY.md), and [migration plan](V4_MIGRATION_PLAN.md). Passing current V3 repository tests does not satisfy this future plan.
+Status: **proposed test plan for an unimplemented and undeployed V4**. It is normative with the [architecture](V4_ARCHITECTURE.md), [state machine](V4_STATE_MACHINE.md), [economics and safety](V4_ECONOMICS_AND_SAFETY.md), [migration plan](V4_MIGRATION_PLAN.md), and pinned [GenLayer compatibility baseline](GENLAYER_COMPATIBILITY_BASELINE.md). Passing current V3 repository tests does not satisfy this future plan.
 
 ## 1. Test layers and oracles
 
-The future suite MUST include pure serializer/math tests, contract unit tests, generated state/property tests, adversarial ordered-transaction tests, GenLayer feasibility prototypes, maximum-bound benchmarks, isolated deployment integration, and versioned frontend integration. Every write test asserts state, accounting, recorded event/result, exact accepted value, and rejection rollback. Every transfer test observes state-before-external-call and full rollback on failure.
+The future suite MUST include pure serializer/math tests, contract unit tests, generated state/property tests, adversarial ordered-transaction tests, GenLayer feasibility prototypes, maximum-bound benchmarks, isolated deployment integration, and versioned frontend integration. Every write test asserts state, accounting, recorded event/result, exact accepted value, and rejection rollback. Gate 5 MUST first prove the deferred external-message lifecycle and select the payout state machine; payout tests then assert its exact parent/child states, observable completion and failure, retry or reconciliation, idempotency, reentrancy safety, and conservation. No test may assume same-write payout rollback before that proof.
 
 Reference oracles are the closed enums, formulas, schemas, predicates, and inequalities in the linked specifications. No frontend state is a contract oracle. GenLayer transaction acceptance is never treated as transaction finalized-success or market settlement.
 
-The activity-test oracle uses exactly this closed enum and no aliases: `MARKET_CREATED | STAKE_ADDED | EVIDENCE_SUBMITTED | EVIDENCE_CLOSED | ATTEMPT_REQUESTED | ATTEMPT_SUCCEEDED | ATTEMPT_FAILED | ATTEMPT_EXPIRED | CHALLENGE_SUBMITTED | MARKET_FINALIZED | MARKET_CANCELLED | WINNINGS_CLAIMED | STAKE_REFUND_CLAIMED | CREATION_BOND_CLAIMED | CHALLENGE_BOND_CLAIMED | RETRY_BOND_CLAIMED`. Every successful public write must match exactly one row of the exhaustive [architecture activity mapping](V4_ARCHITECTURE.md#31-write-methods), including affected ID, previous/new phase, and received/paid value; every rejected, reverted, transaction-level rolled-back, or transfer-failed write must append none.
+The current activity candidate uses this enum and no aliases: `MARKET_CREATED | STAKE_ADDED | EVIDENCE_SUBMITTED | EVIDENCE_CLOSED | ATTEMPT_REQUESTED | ATTEMPT_SUCCEEDED | ATTEMPT_FAILED | ATTEMPT_EXPIRED | CHALLENGE_SUBMITTED | MARKET_FINALIZED | MARKET_CANCELLED | WINNINGS_CLAIMED | STAKE_REFUND_CLAIMED | CREATION_BOND_CLAIMED | CHALLENGE_BOND_CLAIMED | RETRY_BOND_CLAIMED`. Every successful non-claim public write must match exactly one row of the [architecture activity mapping](V4_ARCHITECTURE.md#31-write-methods), including affected ID, previous/new phase, and received value; every rejected or transaction-level reverted write appends none. Claim-side kinds, timing, paid values, success branches, and failure branches MUST be replaced by the exact Gate 5-selected model if atomic parent rollback is not proven.
 
 ## 2. Unit-test matrix: every write
 
@@ -31,11 +31,11 @@ The activity-test oracle uses exactly this closed enum and no aliases: `MARKET_C
 | `expire_attempt` re-resolution | exact boundary; returns no-active challenged provisional | early/stale/terminal/backstop cases |
 | `finalize_market` | unchallenged initial after exact window; successful re-resolution after exact cooldown; YES/NO/INVALID; complete participant scan; full-precision quotient/remainder; all precomputed allocations written and summed before claims; exact winner/refund/empty modes/reasons; all bond dispositions | before time; any challenge with initial; active/pending re-resolution; stale accepted; at/after `U`; participant/index/pool mismatch; unsafe arithmetic; allocation sum mismatch; terminal; no division by zero |
 | `cancel_market` | every reason and precedence combination; pool/nonpool result; all locked bonds assigned | every ineligible near-match; false/lower-precedence reason; exact inclusive request deadline; terminal duplicate |
-| `claim_winnings` | reads only stored allocation/flag; no participant rescan; exact base/remainder/add-bond share; state before transfer; paid statistics and ranked leaderboard reposition after success | wrong user/mode; loser/zero; duplicate; ranking-cap/cost prototype failure; transfer failure rolls back and retry succeeds |
-| `claim_refund` | exact multi-side principal only; state before transfer | bond excluded; wrong mode/user; zero/duplicate; transfer failure/retry |
-| `claim_creation_bond` | beneficiary after normal finalization, refundability, and empty cancellation | nonbeneficiary; locked; added (unreachable type asserted); claimed; transfer failure/retry |
-| `claim_challenge_bond` | each independent bond after changed/`INVALID` re-resolution, refund, and cancel | locked; settlement-added; already claimed; wrong caller/ID; transfer failure/retry |
-| `claim_retry_bond` | own successful retry before terminal; every earlier failed bond after later success/finalization; refund/cancel | zero/`NONE`; locked; added (unreachable); claimed; wrong requester/attempt; transfer failure/retry |
+| `claim_winnings` | Gate 5-selected lifecycle reads stored allocation without participant rescan and produces exactly one observable payment; paid statistics and leaderboard change only at the proven completion point | wrong user/mode; loser/zero; duplicate; ranking-cap/cost failure; deferred-message failure, retry/reconciliation, and reentrancy under selected model |
+| `claim_refund` | Gate 5-selected lifecycle pays exact multi-side principal only once | bond excluded; wrong mode/user; zero/duplicate; deferred-message failure and selected recovery |
+| `claim_creation_bond` | Gate 5-selected lifecycle pays the exact beneficiary after normal finalization, refundability, or empty cancellation | nonbeneficiary; locked; added (unreachable type asserted); already completed or in-flight; deferred-message failure and recovery |
+| `claim_challenge_bond` | Gate 5-selected lifecycle pays each independent eligible bond exactly once | locked; settlement-added; already completed or in-flight; wrong caller/ID; deferred-message failure and recovery |
+| `claim_retry_bond` | Gate 5-selected lifecycle pays own successful retry and every eligible earlier failed bond exactly once | zero/`NONE`; locked; added (unreachable); already completed or in-flight; wrong requester/attempt; deferred-message failure and recovery |
 
 Explicit retry regression sequences MUST include failed and expired zero-bond rerequest rejection for both stages, multiple callers racing the same predecessor, multiple retry submissions, wrong attached amount, active-request rejection, cap rejection, admission-deadline rejection, and attempt N failed/N+1 succeeded/N independently claimed.
 
@@ -43,7 +43,7 @@ Explicit retry regression sequences MUST include failed and expired zero-bond re
 
 The ID oracle is exact: successful creation allocates `market_id=pre-write market_count+1` and then `market_count=market_id`; attempts allocate `initial_attempt_count+reresolution_attempt_count+1` across one shared market-local sequence; evidence, challenge, and activity allocate their applicable pre-write count plus one. Zero is invalid and nullable references use `null`.
 
-Tests MUST prove first/second market IDs `1/2`; rejected and market-cap-rejected creation consumes no ID; market zero and IDs above `market_count` reject; first attempt is `1`; an initial attempt followed by first re-resolution is consecutive; every retry continues the same sequence; rejected first request/retry consumes none; catchably failed execution creates no number; attempt zero rejects; first-kind predecessor is null and retries store the exact existing one-based predecessor; first evidence/challenge/activity IDs are `1`; all counters remain gap-free after rejection, transaction rollback, and claim-transfer rollback; and every list begins with the first one-based ID. Participant `participant_index` remains zero-based and MUST NOT be tested as a protocol ID.
+Tests MUST prove first/second market IDs `1/2`; rejected and market-cap-rejected creation consumes no ID; market zero and IDs above `market_count` reject; first attempt is `1`; an initial attempt followed by first re-resolution is consecutive; every retry continues the same sequence; rejected first request/retry consumes none; catchably failed execution creates no number; attempt zero rejects; first-kind predecessor is null and retries store the exact existing one-based predecessor; first evidence/challenge/activity IDs are `1`; all counters remain gap-free after rejection and transaction rollback; claim-side activity/ID behavior across deferred-message failure follows the Gate 5-selected state machine; and every list begins with the first one-based ID. Participant `participant_index` remains zero-based and MUST NOT be tested as a protocol ID.
 
 ## 3. Unit-test matrix: every view
 
@@ -67,7 +67,7 @@ Tests MUST prove first/second market IDs `1/2`; rejected and market-cap-rejected
 | `get_challenge` | exact `ChallengeResult`; zero rejects; every field, processed optional URL/nonempty reason, and positive-missing `found=false/challenge=null` |
 | `list_challenges` | exact `ChallengePage`; ascending one-based records from `1`, no gaps after failure, exact bond states |
 | `get_activity` | exact `ActivityResult`; zero rejects; present one-based record and positive-missing `found=false/activity=null` |
-| `list_activity` | exact `ActivityPage`; consecutive IDs beginning `1`, exact schemas/values/null mappings and one-based affected IDs, one record per successful write and none per failure |
+| `list_activity` | exact `ActivityPage`; consecutive IDs beginning `1`, exact schemas/values/null mappings and one-based affected IDs; one record per successful non-claim write and none per rejected/reverted non-claim write; claim-side timing follows the Gate 5-selected observable-completion model |
 | `get_claimable` | exact `ClaimableView`; checked six-field sum; nonterminal refundable bonds included; excluded statuses; per-user aggregate reconciliation; no scan or ID array |
 | `get_cancellation_eligibility` | exact `CancellationEligibilityView`; market-wide, permissionless, creator-only, caller authorization, and reason combinations |
 | `get_stats` | exact stored `ProtocolStatsView`; phase-count sum, receipts/payments/liabilities, fee zero; no market scan |
@@ -106,7 +106,7 @@ The test oracle is the function `effective_status(attempt,now)=EXPIRED if stored
 
 ### 4.1 Exact activity projection tests
 
-Every case below MUST assert exactly one new consecutive activity ID, the exact kind and affected ID, exact previous/new phases, exact received/paid values, and no other activity record. For every row, repeat at least one rejected/reverted case and assert no record or ID consumption. Transaction-level execution rollback and claim-transfer failure MUST likewise append none and restore all state.
+Every non-claim case below MUST assert exactly one new consecutive activity ID, the exact kind and affected ID, exact previous/new phases, exact received value, and no other activity record. For every non-claim row, repeat at least one rejected/reverted case and assert no record or ID consumption. Transaction-level execution rollback MUST append none and restore all state. The five claim rows describe the current atomic candidate only; Gate 5 MUST prove it or replace them with exact request/completion/failure/retry activity oracles.
 
 | Required case | Expected activity and branch oracle |
 | --- | --- |
@@ -133,13 +133,13 @@ Every case below MUST assert exactly one new consecutive activity ID, the exact 
 | empty `T=0` finalization | `MARKET_FINALIZED`; affected null; `PROVISIONALLY_RESOLVED` -> `CANCELLED`; zero values |
 | every `cancel_market` reason with `T=0` | `MARKET_CANCELLED`; affected null; exact prior nonterminal phase -> `CANCELLED`; zero values |
 | every `cancel_market` reason with `T>0` | `MARKET_CANCELLED`; affected null; exact prior nonterminal phase -> `REFUNDABLE`; zero values |
-| `claim_winnings` | `WINNINGS_CLAIMED`; affected null; `FINALIZED` -> same; exact winnings paid |
-| `claim_refund` | `STAKE_REFUND_CLAIMED`; affected null; `REFUNDABLE` -> same; exact principal paid |
-| `claim_creation_bond` | `CREATION_BOND_CLAIMED`; affected null; current phase -> same; exact creation bond paid |
-| `claim_challenge_bond` | `CHALLENGE_BOND_CLAIMED`; affected challenge ID; current phase -> same; exact challenge bond paid |
-| `claim_retry_bond` | `RETRY_BOND_CLAIMED`; affected attempt number; current phase -> same; exact retry bond paid |
+| `claim_winnings` (atomic candidate, Gate 5 conditional) | `WINNINGS_CLAIMED` only at observably completed payment; affected null; `FINALIZED` -> same; exact winnings paid |
+| `claim_refund` (atomic candidate, Gate 5 conditional) | `STAKE_REFUND_CLAIMED` only at observably completed payment; affected null; `REFUNDABLE` -> same; exact principal paid |
+| `claim_creation_bond` (atomic candidate, Gate 5 conditional) | `CREATION_BOND_CLAIMED` only at observably completed payment; affected null; current phase -> same; exact creation bond paid |
+| `claim_challenge_bond` (atomic candidate, Gate 5 conditional) | `CHALLENGE_BOND_CLAIMED` only at observably completed payment; affected challenge ID; current phase -> same; exact challenge bond paid |
+| `claim_retry_bond` (atomic candidate, Gate 5 conditional) | `RETRY_BOND_CLAIMED` only at observably completed payment; affected attempt number; current phase -> same; exact retry bond paid |
 
-Static manifest tests MUST enumerate all 17 public writes, match every successful result branch to exactly one row of the architecture mapping, detect missing or duplicate branches, prove `retry_resolution` maps only to `ATTEMPT_REQUESTED`, prove all three `finalize_market` branches map to `MARKET_FINALIZED`, and prove `MARKET_CANCELLED` maps only to `cancel_market`. The activity-cap test MUST recompute `4 + max_stake_calls_per_market + max_evidence + 3*A + 2*max_challenges + max_positions` and confirm it remains sufficient when each successful compound retry consumes only one record.
+Static manifest tests MUST enumerate the exact closed non-claim writes and the five current candidate claim-write intents separately, match every non-claim successful result branch to exactly one row of the architecture mapping, detect missing or duplicate branches, prove `retry_resolution` maps only to `ATTEMPT_REQUESTED`, prove all three `finalize_market` branches map to `MARKET_FINALIZED`, and prove `MARKET_CANCELLED` maps only to `cancel_market`. The current candidate has 17 writes, of which five claim entries are Gate 5 conditional. After Gate 5, tests MUST recalculate and freeze the selected complete ABI method count, claim statuses, activity branches, total branch count, and activity capacity, followed by independent review. The candidate formula `4 + max_stake_calls_per_market + max_evidence + 3*A + 2*max_challenges + max_positions` is accepted only if Gate 5 proves the one-record completed-claim candidate.
 
 ## 5. Timing construction and boundary properties
 
@@ -193,7 +193,11 @@ Market-creation tests MUST inspect the preterminal stored `Settlement`: `market_
 
 After every generated operation, assert:
 
+For the current atomic payout candidate:
+
 `funds_received = funds_paid + stake_liability + locked_bond_liability + refundable_bond_liability + settlement_added_bond_liability`.
+
+Gate 5 MUST either prove that equation across external-message failure with `funds_paid` increasing only on observable payment completion, or select a revised exact equation with explicit in-flight/reconciliation categories.
 
 Also assert:
 
@@ -203,13 +207,13 @@ Also assert:
 - refunds sum exactly contributed principal and never include/overrun bonds;
 - per-bond and aggregate received equals amounts paid to beneficiaries/winners plus locked, refundable, and settlement-added outstanding amounts;
 - no bond is both claimed and added, claimed twice, omitted, or fictional;
-- every returned-bond transfer decreases exactly one refundable category; winner claims consume stake origin first, then settlement-added bonds in ascending challenge-ID order, and all paid totals increase exactly;
+- every observably completed returned-bond payment decreases exactly one refundable category; winner payments consume stake origin first, then settlement-added bonds in ascending challenge-ID order, and all paid totals increase exactly at the Gate 5-proven completion point;
 - each per-user refundable challenge/retry aggregate equals that user's refundable per-bond sum after every transition and claim, so `ClaimableView` needs no collection scan;
 - all eight stored phase counters sum to `market_count`; every transition moves exactly one phase count; stored receipt/payment/liability/type totals reconcile with markets without a `get_stats` scan;
 - stored leaderboard entries remain descending by paid winnings then ascending address, one-based ranks/index mappings reconcile, and pagination does not sort;
-- winner/principal claims are one-time; transfer failure consumes nothing;
+- winner/principal economic payments occur exactly once; external-message failure is observable and preserves or restores an exact retryable/reconcilable liability under the Gate 5-selected model;
 - no earlier attempt overwrites later accepted/final attempt;
-- every successful write has exactly one consecutive bounded activity record; failed writes have none; activity capacity remains for every permitted exit;
+- every successful non-claim write has exactly one consecutive bounded activity record and transaction-level reverted non-claim writes have none; claim activity records follow the Gate 5-selected branches; selected activity capacity remains for every permitted exit and reconciliation action;
 - every terminal market exposes all applicable stake and bond release paths; `EMPTY_FINALIZATION` exposes bond-only claims;
 - unclaimed winner/principal/bond amounts remain assigned indefinitely.
 
@@ -296,13 +300,13 @@ Trace every bond independently through:
 - no-resolution and challenged-no-reresolution cancellation: all locked bonds refundable;
 - empty creator cancellation and unchallenged/challenged `EMPTY_FINALIZATION`: creation claim in `CANCELLED`, no stake/winner claim, and distinct terminal reasons;
 - retry N failure, N+1 success: N locked until terminal, N+1 immediately claimable, both eventually independently paid;
-- transfer failure for each typed bond claim: consumed state writes are attempted before call, transaction rollback restores `REFUNDABLE`, next claim succeeds;
+- for each typed bond claim, Gate 5 proves whether external-message failure atomically restores parent state; if so, verify the retryable atomic candidate, otherwise verify every selected request/in-flight/failure/retry-or-reconciliation transition and one economic payment;
 - attempt-cap exhaustion, request-deadline miss, execution failure/expiry, and hard backstop: every received bond appears in exactly one terminal category.
 
 ## 10. Maximum-bound and feasibility tests
 
 - Exact schema-conformance tests instantiate every individually typed storage entity and every DTO/result/page in [architecture section 3.2](V4_ARCHITECTURE.md#32-closed-bounded-read-abi); missing, extra, reordered, wrong-width, overflowed, wrong-optional, mapping, internal collection, or implicit return fields reject.
-- ABI-manifest tests enumerate exactly every signature in architecture section 3.2.4, reject missing/extra methods and implementation-defined tuples, and prove every variable collection is behind its declared page or byte-chunk result.
+- Before Gate 5, ABI-manifest tests enumerate the exact closed non-claim signatures and separately label the current 40-method candidate (`17` writes and `23` views), including its five conditional claim writes. They MUST NOT freeze 40 as the production count. After Gate 5 selects claim delivery, tests recalculate the complete production ABI and reject missing/extra methods and implementation-defined tuples; any added confirmation, retry, reconciliation, or status method and the revised total require independent review. Every variable collection remains behind its declared page or byte-chunk result.
 - Configuration tests cover exact `uint64` timestamps; one captured creation time and inclusive minimum/maximum cutoff arithmetic; positive attempt caps; checked `uint32` cap sum at `4_294_967_295` and one above; one-based shared next-attempt overflow; one-based market/evidence/challenge/activity allocation and zero rejection; checked `max_markets*max_positions=max_leaderboard_entries`; positive `max_page_size` and `max_canonical_invocation_bytes`; stake-call/activity construction including exact `uint32` formula-fit boundaries; and every derived timestamp bound.
 - Maximum ordinary evidence/challenges/output produces bounded complete invocation bytes and successful digest recomputation within measured limits.
 - Maximum participants, all winners, worst remainder ties, and multi-side positions benchmark finalization scan/ranking/allocation writes. Winner claims MUST avoid participant scans but benchmark worst-case stored-leaderboard insertion/reposition at the selected capacity. Record CPU/gas/execution/storage measurements and safety margin.
@@ -310,23 +314,23 @@ Trace every bond independently through:
 - Pagination tests cover every record/output/byte collection at zero/exact/over cap, final partial page, empty page, invalid offset, exact metadata, and deterministic order.
 - One over each storage/value cap rejects before storage/value/activity acceptance.
 - ABI/payability tests prove exactly creation, stake, challenge, and retry receive value; every other method rejects nonzero value.
-- Prototype all ten [GenLayer feasibility gates](V4_ARCHITECTURE.md#9-mandatory-genlayer-feasibility-gates), including two-step separation; stale/pending execution; hard-backstop concurrency; catchable versus transaction failures; outbound rollback, reentrancy, unsolicited/forced inbound value, and exact balance accounting; SHA/types plus deterministic `uint64` time; accepted/finalized races; maximum complete invocation and chunked exact byte storage; participant/index/full-precision allocation and ranked-leaderboard claim cost; and timing/attempt/pagination/statistics/view feasibility with selected values.
+- Prototype all ten [GenLayer feasibility gates](V4_ARCHITECTURE.md#9-mandatory-genlayer-feasibility-gates), including two-step separation; stale/pending execution; hard-backstop concurrency; catchable versus transaction failures; deferred outbound EOA/EVM messages, exact parent state on receiving-EVM failure, observable success/failure, deterministic retry or reconciliation, no double payment or lost liability, reentrancy, unsolicited/forced inbound value, and exact balance accounting; SHA/types plus deterministic `uint64` time; accepted/finalized races; maximum complete invocation and chunked exact byte storage; participant/index/full-precision allocation and ranked-leaderboard claim cost; and timing/attempt/pagination/statistics/view feasibility with selected values. Internal intelligent-contract value messages are explicitly rejected as a payout substitute because child failure is not automatically refundable.
 - Static stage-order tests require `AI`, `C`, `G`, `AR`, `F`, `fund_unlock_delay`, both attempt caps, invocation/storage, participant/page/activity/leaderboard/stake-call, and all other execution/storage-dependent hard values to be selected and proven during feasibility work. No value may be described as selected after the gates; all ten gates must pass before a V4 production-contract implementation branch, followed by complete implementation/tests/zero-P0-P1 review before test deployment.
-- Documentation/static conformance tests SHOULD reject unconditional “every market automatically reaches” claims and any URL-fetch/authentication, nonzero-fee, owner-withdrawal, or mutable-existing-market claim.
+- Documentation/static conformance tests SHOULD reject unconditional “every market automatically reaches” claims, affirmative synchronous payout-rollback assumptions, and any URL-fetch/authentication, nonzero-fee, owner-withdrawal, or mutable-existing-market claim. They MUST require Gate 5 authority and a prohibition on production claim coding before its payout state machine is selected.
 
 ## 11. Integration lifecycle checklist
 
 ### Unchallenged payout
 
-Create; first/repeat/multi-side stake with exact participant index; submit/no evidence variants; close; request with complete invocation digest; execute; observe transaction submitted/accepted/finalized-success separately; observe provisional result; wait full window; finalize precomputed allocations; claim exact winnings/creation and retry bonds without participant rescan; verify no refresh, totals, activity, leaderboard, and identity.
+Create; first/repeat/multi-side stake with exact participant index; submit/no evidence variants; close; request with complete invocation digest; execute; observe transaction submitted/accepted/finalized-success separately; observe provisional result; wait full window; finalize precomputed allocations; use the Gate 5-selected lifecycle to claim exact winnings/creation and retry bonds without participant rescan; verify no refresh, one payment, failure recovery, totals, activity, leaderboard, and identity.
 
 ### Challenged payout
 
-Create/stake/evidence; initial request/execution; challenge at boundaries; close full window; request and failed/expired retry variants; verify all challenge evidence and every instruction byte in the complete invocation digest; successful re-resolution; objective bond disposition; cooldown; finalize precomputed allocations; claim all eligible stake/bonds; reject settlement-added challenge claims and stale executions.
+Create/stake/evidence; initial request/execution; challenge at boundaries; close full window; request and failed/expired retry variants; verify all challenge evidence and every instruction byte in the complete invocation digest; successful re-resolution; objective bond disposition; cooldown; finalize precomputed allocations; use the Gate 5-selected lifecycle to claim all eligible stake/bonds; reject settlement-added challenge claims and stale executions.
 
 ### Failure/refund/cancellation
 
-Exercise no evidence, malformed output, transaction rollback/pending, stored/effective expiry, all retry caps/deadlines, challenge without successful re-resolution, zero winner, `T=0` unchallenged and challenged `EMPTY_FINALIZATION`, `EMPTY_CREATOR_CANCEL`, every cancellation reason/precedence, caller-specific eligibility, hard backstop, stake refunds, all typed bond claims, double/failed transfers, and perpetual unclaimed liability.
+Exercise no evidence, malformed output, transaction rollback/pending, stored/effective expiry, all retry caps/deadlines, challenge without successful re-resolution, zero winner, `T=0` unchallenged and challenged `EMPTY_FINALIZATION`, `EMPTY_CREATOR_CANCEL`, every cancellation reason/precedence, caller-specific eligibility, hard backstop, stake refunds, all typed bond claims, duplicate attempts, deferred-message failures, selected retry/reconciliation, and perpetual unclaimed liability.
 
 ### Migration and frontend
 
@@ -338,6 +342,8 @@ No V4 deployment is complete and no production alias may default to it until:
 
 - all ten feasibility gates pass with direct evidence;
 - those ten gates passed before any V4 production-contract implementation branch began;
+- the deployment transaction's actual returned state is `FINALIZED` and its execution result is `FINISHED_WITH_RETURN`; neither `ACCEPTED`, `AGREE`, nor a submission hash qualifies;
+- the address comes from a supported typed SDK/runtime field or derivation, `getContractCode` and `getContractSchema` succeed on Bradbury chain ID `4221`, and retrieved source bytes exactly match the candidate source;
 - exact source/config/ABI/chain/address identity is reproducible;
 - hard numeric caps and economic values are selected and reviewed;
 - maximum complete-invocation/chunk storage, participant allocation, full-precision arithmetic, ranked-leaderboard claim update, closed DTO/page reads, pagination, statistics updates, `uint64` time conversion, and activity benchmarks fit practical limits with safety margin;
