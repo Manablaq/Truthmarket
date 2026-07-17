@@ -907,6 +907,8 @@ The accepted baseline is no owner, guardian, pause, proxy, mutable configuration
 
 ## 9. Mandatory GenLayer feasibility gates
 
+Planning records: the [implementation-readiness audit](V4_IMPLEMENTATION_READINESS_AUDIT.md) found that no production V4 source exists at its baseline, and the [bounded foundation plan](V4_BOUNDED_FOUNDATION_PLAN.md) governs the evidence and decision closure required before production coding. These records do not alter this architecture, waive a feasibility gate, modify an official release-policy status, or authorize implementation.
+
 The ten questions below remain the complete GenLayer feasibility catalogue. **Product Release Readiness** requires repository evidence or isolated prototypes for every product-level safety dependency before the affected production behavior is accepted. Gate 2 is split: reviewed production stale-write guards, schema compatibility, local behavioral regression, post-intelligence guard ordering, and rejection atomicity remain mandatory product requirements, while complete historical reconstruction and natural-overlap forensic proof are optional **Forensic Assurance Research** under the [V4 release policy](../experiments/v4-gate2/V4_RELEASE_POLICY.md). `EVIDENCE_CAPABILITY_NOT_PROVED` therefore does not by itself prohibit ordinary V4 planning or implementation.
 
 This reclassification applies only to Gate 2's protocol-forensic evidence dependency. It does not waive the other feasibility gates, Gate 5 payout-state-machine selection, hard-value benchmarks, product tests, independent review, or deployment acceptance criteria:

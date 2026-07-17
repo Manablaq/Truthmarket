@@ -16,6 +16,13 @@ This decision does not change `EVIDENCE_CAPABILITY_NOT_PROVED`. It does not clai
 - Holding the entire product behind an unavailable forensic proof would not be proportionate to the product risk that proof addresses.
 - TruthMarket must still satisfy strict contract, product, UX, security, and Bradbury end-to-end validation before release. This reclassification removes one disproportional dependency; it does not lower the release standard or establish readiness.
 
+## Planning records
+
+- The [V4 implementation-readiness audit](../../docs/V4_IMPLEMENTATION_READINESS_AUDIT.md) is an analytical evidence record for PRR-01 through PRR-08.
+- The [V4 bounded foundation plan](../../docs/V4_BOUNDED_FOUNDATION_PLAN.md) governs pre-implementation evidence production and decision closure.
+
+PRR-01 through PRR-08 remain officially `NOT_EVALUATED`; analytical audit statuses do not modify official statuses. Product V4 implementation remains `AUTHORIZED_TO_PLAN`, which is not authorization to code. Neither planning record authorizes deployment, release, or Builder Program submission.
+
 ## Track A — Product Release Readiness
 
 **Product Release Readiness** is mandatory for completing, deploying, validating, and submitting TruthMarket V4. It covers:
