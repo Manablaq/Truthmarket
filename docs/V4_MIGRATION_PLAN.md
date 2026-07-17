@@ -2,6 +2,8 @@
 
 Status: **proposed migration plan; V4 is unimplemented and undeployed**. This plan depends on the [architecture](V4_ARCHITECTURE.md), [state machine](V4_STATE_MACHINE.md), [economics and safety](V4_ECONOMICS_AND_SAFETY.md), [test plan](V4_TEST_PLAN.md), and pinned [GenLayer compatibility baseline](GENLAYER_COMPATIBILITY_BASELINE.md).
 
+**Pre-implementation control:** the [V4 bounded foundation plan](V4_BOUNDED_FOUNDATION_PLAN.md) governs the evidence-producing feasibility work, hard-value selection, dependency closure, and independent authorization decision required before production coding. The linked plan does not complete or advance any migration stage.
+
 ## 1. V3 remains immutable and current
 
 The current V3 contract is `0xa7105D2A409b769B62a456E1d57B1210B875cEA5` on Bradbury chain ID `4221`. V3 code, address, ABI, state, balances, market semantics, and current frontend configuration MUST NOT be replaced or relabelled as V4. This documentation phase changes none of them.
