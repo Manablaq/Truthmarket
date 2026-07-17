@@ -67,13 +67,15 @@ class _TreeMap(dict):
 def load_probe_module():
     fake_genlayer = types.ModuleType("genlayer")
     fake_genlayer.TreeMap = _TreeMap
+    fake_genlayer.u64 = int
+    fake_genlayer.i64 = int
     fake_genlayer.gl = types.SimpleNamespace(
         Contract=object,
         public=_PublicDecorators(),
         nondet=_NondeterministicStub(),
         eq_principle=_EquivalenceStub(),
     )
-    fake_genlayer.__all__ = ["TreeMap", "gl"]
+    fake_genlayer.__all__ = ["TreeMap", "u64", "i64", "gl"]
     sys.modules["genlayer"] = fake_genlayer
 
     module_name = "gate2_stage_a_probe_under_test"
@@ -130,6 +132,48 @@ class Gate2ProbeTests(unittest.TestCase):
         self.assert_parity(probe, model)
         self.assertEqual(probe.request_probe(41), model.request_probe(41))
         self.assert_parity(probe, model)
+
+    def test_initial_storage_sentinel_is_encapsulated_by_public_state(self):
+        probe = new_probe()
+        self.assertEqual(probe.latest_request_id, PROBE.NO_ATTEMPT_ID)
+        state = probe.get_state()
+        self.assertIsNone(state.latest_request_id)
+        self.assertIsNone(state.derived_active_attempt_id)
+        self.assertEqual(state.attempts, [])
+
+    def test_valid_and_inactive_public_id_views_never_expose_sentinel(self):
+        probe = new_probe()
+        first = probe.request_probe(0)
+        active_state = probe.get_state()
+        self.assertEqual(first, 1)
+        self.assertEqual(active_state.latest_request_id, 1)
+        self.assertEqual(active_state.derived_active_attempt_id, 1)
+        self.assertEqual(active_state.attempts[0].request_id, 1)
+        self.assertIsNone(active_state.attempts[0].predecessor_id)
+        self.assertEqual(probe.get_attempt(1).request_id, 1)
+        self.assertIsNone(probe.get_attempt(1).predecessor_id)
+
+        probe.expire_probe(first)
+        inactive_state = probe.get_state()
+        self.assertEqual(inactive_state.latest_request_id, 1)
+        self.assertIsNone(inactive_state.derived_active_attempt_id)
+
+        second = probe.retry_probe(first, 2)
+        probe.cancel_probe()
+        cancelled_state = probe.get_state()
+        self.assertEqual(second, 2)
+        self.assertEqual(cancelled_state.latest_request_id, 2)
+        self.assertIsNone(cancelled_state.derived_active_attempt_id)
+        self.assertEqual(probe.get_attempt(second).predecessor_id, 1)
+
+    def test_zero_attempt_id_rejection_preserves_sentinel_and_first_allocation(self):
+        probe = new_probe()
+        self.assert_rejected_without_mutation(probe, probe.get_attempt, 0)
+        self.assert_rejected_without_mutation(probe, probe.execute_probe, 0)
+        self.assertEqual(probe.latest_request_id, PROBE.NO_ATTEMPT_ID)
+        self.assertIsNone(probe.get_state().latest_request_id)
+        self.assertEqual(probe.request_probe(7), 1)
+        self.assertEqual(probe.latest_request_id, 1)
 
     def test_s02_current_execution_uses_stored_candidate(self):
         probe = new_probe()
@@ -283,7 +327,8 @@ class Gate2ProbeTests(unittest.TestCase):
             probe, probe.request_probe, PROBE.MAX_SAFE_INTEGER + 1
         )
         self.assertEqual(probe.request_count, 0)
-        self.assertIsNone(probe.latest_request_id)
+        self.assertEqual(probe.latest_request_id, PROBE.NO_ATTEMPT_ID)
+        self.assertIsNone(probe.get_state().latest_request_id)
         self.assertEqual(probe.request_probe(11), 1)
         self.assertEqual(probe.request_count, 1)
         self.assertEqual(probe.latest_request_id, 1)

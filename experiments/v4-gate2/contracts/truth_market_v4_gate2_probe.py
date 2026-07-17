@@ -17,6 +17,7 @@ from genlayer import *
 MIN_SAFE_INTEGER = -9_007_199_254_740_991
 MAX_SAFE_INTEGER = 9_007_199_254_740_991
 MAX_ATTEMPTS = 3
+NO_ATTEMPT_ID = 0
 
 STATUS_REQUESTED = "REQUESTED"
 STATUS_SUCCEEDED = "SUCCEEDED"
@@ -50,15 +51,15 @@ class TruthMarketV4Gate2Probe(gl.Contract):
     """Bounded, deterministic Gate 2 probe; never production market code."""
 
     requests: TreeMap[str, str]
-    request_count: int
-    latest_request_id: Optional[int]
+    request_count: u64
+    latest_request_id: u64
     lifecycle_status: str
-    current_value: int
-    execution_count: int
+    current_value: i64
+    execution_count: u64
 
     def __init__(self):
         self.request_count = 0
-        self.latest_request_id = None
+        self.latest_request_id = NO_ATTEMPT_ID
         self.lifecycle_status = LIFECYCLE_ACTIVE
         self.current_value = 0
         self.execution_count = 0
@@ -82,7 +83,9 @@ class TruthMarketV4Gate2Probe(gl.Contract):
         assert self.lifecycle_status == LIFECYCLE_ACTIVE, "LIFECYCLE_NOT_ACTIVE"
 
     def _latest_request_id_view(self) -> Optional[int]:
-        return self.latest_request_id
+        if self.latest_request_id == NO_ATTEMPT_ID:
+            return None
+        return int(self.latest_request_id)
 
     def _next_request_id(self) -> int:
         self._require_counter(self.request_count, "REQUEST_COUNT_INVALID")
@@ -155,7 +158,7 @@ class TruthMarketV4Gate2Probe(gl.Contract):
         exact_value = self._require_safe_integer(candidate_value)
         request_id = self._next_request_id()
         assert self.request_count == 0, "FIRST_REQUEST_ALREADY_EXISTS"
-        assert self.latest_request_id is None, "FIRST_REQUEST_ALREADY_EXISTS"
+        assert self.latest_request_id == NO_ATTEMPT_ID, "FIRST_REQUEST_ALREADY_EXISTS"
         assert self._derived_active_attempt_id() is None, "ACTIVE_ATTEMPT_EXISTS"
         self._save_attempt(
             {
