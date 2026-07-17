@@ -134,7 +134,7 @@ This preflight does not prove that:
 - authoritative old-path entry or overlap ordering is observable; or
 - Gate 2 has passed.
 
-Production V4 remains blocked.
+At the time of this preflight, Production V4 remained globally blocked behind the ten-gate feasibility sequence. The later [V4 release policy](V4_RELEASE_POLICY.md) preserves every limitation above while reclassifying complete Gate 2 forensic observability as optional **Forensic Assurance Research**, not a global **Product Release Readiness** prerequisite. No readiness, deployment, or forensic-proof claim follows from that reclassification.
 
 ## Proposed Gate 2 design derived from the evidence
 

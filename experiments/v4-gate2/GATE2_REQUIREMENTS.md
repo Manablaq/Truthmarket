@@ -6,6 +6,12 @@ Source baseline: `0c73afa73a2cdb31b12b59095f5d19ac06e9db9d`.
 
 The finalized Bradbury Studio ABI evidence and its strict limitations are recorded in `BRADBURY_ABI_PREFLIGHT.md`. That preflight narrows the probe view design but does not prove stale-write protection, ordering, or Gate 2.
 
+## Release-policy boundary
+
+These frozen requirements govern the optional **Forensic Assurance Research** experiment. They remain mandatory before claiming that the experiment proved the natural-overlap property, reconstructed protocol-level history, or established any Gate 2 forensic verdict. The evidence status remains `EVIDENCE_CAPABILITY_NOT_PROVED`, and the controlled forensic experiment remains `BLOCKED_PENDING_SEPARATE_AUTHORIZATION`.
+
+These experimental requirements are not mandatory prerequisites for completing the TruthMarket application. **Product Release Readiness** is governed by [V4_RELEASE_POLICY.md](V4_RELEASE_POLICY.md), including its mandatory stale-write regression, guard-ordering, schema, contract, frontend, security, and Bradbury end-to-end checks. The product track may proceed without weakening, satisfying, or representing these frozen forensic requirements as complete. This boundary authorizes no deployment, wallet use, funding, transaction signing or submission, controlled experiment, production release, or Builder Program submission.
+
 ## 1. Purpose and capability
 
 Gate 2 must prove on GenLayer Bradbury that, after authoritative state makes attempt N nonactive and creates successor N+1, execution of N cannot commit protected mutations before or after N+1 succeeds. N+1 must remain executable. After N+1 finalizes `SUCCEEDED`, stale N cannot alter the successor result, protected value, counters, attempt history, lifecycle, latest-attempt pointer, or derived active-attempt identity.
@@ -270,9 +276,9 @@ Stage A ends with exactly `EVIDENCE_CAPABILITY_PROVED` or `EVIDENCE_CAPABILITY_N
 
 Every accepted evidence source must freeze its exact provider/interface, API or RPC method, request parameters, response fields, types and nullability, authority/finality meaning, historical and post-finalization availability, comparison algorithm, state-version correlation, old-path semantics, conflict/re-execution semantics, independent reproduction procedure, and raw-response capture and hash procedure. Conceptual labels, rendered UI text, polling timestamps, runner observation order, submission order, and account nonces do not prove capability.
 
-If either authoritative evidence capability or the practical permitted overlap mechanism is missing, the result is `EVIDENCE_CAPABILITY_NOT_PROVED`, Gate 2 remains inconclusive, and Stage B remains blocked. Incomplete, contradictory, integrity-defective, or assumption-based inspection instead requires `REQUEST_CHANGES`. When automated read-only network inspection is unavailable, a documented manual read-only inspection procedure may be used; lack of access is never capability proof.
+If either authoritative evidence capability or the practical permitted overlap mechanism is missing, the result is `EVIDENCE_CAPABILITY_NOT_PROVED`, Gate 2 remains inconclusive, and Stage B of the optional forensic experiment remains blocked. Incomplete, contradictory, integrity-defective, or assumption-based inspection instead requires `REQUEST_CHANGES`. When automated read-only network inspection is unavailable, a documented manual read-only inspection procedure may be used; lack of access is never capability proof. This forensic result does not determine Product Release Readiness.
 
-Stage B may be planned only after independent Stage A review, passing local/compiler/ABI tests, structured-read proof, `EVIDENCE_CAPABILITY_PROVED`, and separate review of the exact evidence fields and comparison algorithm. Even then, Stage B planning does not authorize deployment, accounts, signers, funding, or transactions. Raw evidence remains unable to authorize `PASS` or `FAIL`; only the independent verifier may produce verified trial and scenario results.
+Stage B of Forensic Assurance Research may be planned only after independent Stage A review, passing local/compiler/ABI tests, structured-read proof, `EVIDENCE_CAPABILITY_PROVED`, and separate review of the exact evidence fields and comparison algorithm. Even then, forensic Stage B planning does not authorize deployment, accounts, signers, funding, or transactions. Raw evidence remains unable to authorize `PASS` or `FAIL`; only the independent verifier may produce verified trial and scenario results. Ordinary product planning and implementation follow `V4_RELEASE_POLICY.md` instead.
 
 ## 10. Transaction finality
 

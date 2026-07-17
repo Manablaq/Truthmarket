@@ -7,6 +7,22 @@ Stage A probe. Local source and state-machine tests do not prove Bradbury
 concurrency, intelligent-path entry, authoritative ordering, re-execution,
 conflict behavior, or stale-write protection on Bradbury.
 
+## Policy note — 2026-07-17
+
+The formal evidence status remains `EVIDENCE_CAPABILITY_NOT_PROVED`, and the
+controlled forensic experiment has not been executed. Under the two-track
+[TruthMarket V4 release policy](V4_RELEASE_POLICY.md), this result blocks only
+forensic-proof claims and the optional experiment, whose status is
+`BLOCKED_PENDING_SEPARATE_AUTHORIZATION`. It no longer blocks ordinary V4
+product planning, implementation, or Builder Program preparation through the
+mandatory **Product Release Readiness** checklist.
+
+This reclassification does not alter or conceal any investigation finding
+below. Bradbury deployment, wallet use, funding, transaction signing or
+submission, production release, and Builder Program submission still require
+separate authorization. **Forensic Assurance Research** remains optional and
+unproved.
+
 ## Local implementation boundary
 
 The Stage A source implements the frozen bounded probe state machine and intended
@@ -51,10 +67,12 @@ getters, or a different record shape.
    approved intelligent operation without artificial delay, added path markers or
    events, favorable retries, replacement trials, or discarded trials.
 
-Neither requirement is currently satisfied. Stage B remains blocked. Production
-V4 remains blocked. Raw runner evidence cannot authorize `PASS` or `FAIL`; only a
-future independently reviewed verifier may produce verified trial and scenario
-results.
+Neither requirement is currently satisfied. Stage B of the optional forensic
+experiment remains blocked. The original preflight treated this as a global
+Production V4 blocker; the dated policy note above supersedes only that release
+dependency, not the evidence conclusion. Raw runner evidence cannot authorize
+`PASS` or `FAIL`; only a future independently reviewed verifier may produce
+verified trial and scenario results.
 
 ## Unfilled inspection record
 
