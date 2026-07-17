@@ -7,6 +7,7 @@ It is not a Gate 2 probe implementation and contains no contract or deployment r
 ## Contents
 
 - `GATE2_REQUIREMENTS.md`: normative scope, invariant, retry ancestry, evidence, and verdict rules.
+- `BRADBURY_ABI_PREFLIGHT.md`: finalized structured-read ABI evidence and its explicit nonclaims.
 - `VERIFIER_SPEC.md`: future independent offline evidence-verifier contract.
 - `fixtures/canonicalization-vectors.json`: frozen cross-language canonicalization vectors.
 - `models/`: deterministic nonproduction state and scheduler models.
@@ -33,6 +34,10 @@ node --test \
 
 The Python and Node canonicalizers are independent implementations checked against frozen bytes and hashes. Local and scheduler models prove only the specified model/harness behavior, never Bradbury execution semantics.
 
+The finalized ABI preflight proves only the exact deployed source's Studio schema generation, Bradbury deployment and finalized execution, demonstrated nested dataclass/list serialization, `Optional[int]` schema acceptance, and logical decoded `get_state` result recorded in `BRADBURY_ABI_PREFLIGHT.md`. The raw RPC envelope was not independently preserved in this documentation amendment. It does not prove that the larger Gate 2 dataclasses compiled or deployed.
+
+Gate 2 freezes `Gate2StateView` and `Gate2AttemptView` as the intended bounded Stage A read ABI. Their exact definitions must pass Studio schema generation or another authorized compiler check before Stage A approval; failure stops Stage A for requirements review rather than allowing a silent ABI change. The Stage A Gate 2 probe SHALL retain an explicit `__init__` because every successful Studio schema experiment in the preflight used one while the tested minimal contract without it failed schema loading. This is a conservative requirement for this probe, not a universal GenLayer rule. The contract does not generate canonical JSON: a future runner preserves raw typed results and complete RPC envelopes, while the independent verifier maps them to frozen logical state, canonicalizes them, computes UTF-8 bytes and SHA-256, and compares mutations.
+
 Verdict helpers in `tests/support/` validate structural contracts and compose internally marked verified test results only. They are not an evidence verifier: raw runner claims cannot produce `PASS` or `FAIL`, and serialization removes every requirements-stage verification marker. A future independently reviewed verifier must recompute ordering, snapshot integrity, mutation sets, assertions, and scenario results.
 
 ## Remaining authorization boundary
@@ -40,5 +45,9 @@ Verdict helpers in `tests/support/` validate structural contracts and compose in
 The following remain unauthorized: a probe contract, Bradbury runner, account setup, funding, wallet use, deployment, transaction submission, production V4 code, commit, push, or pull request.
 
 Authoritative ordering metadata or trace support may be unavailable or lack verified semantics. In that case the live-overlap trials and Gate 2 must remain `INCONCLUSIVE`; polling chronology cannot be substituted.
+
+Stage A remains limited to the local probe, local/model/compiler/ABI tests, read-only evidence-capability inspection, and focused documentation. Stage B remains blocked until independently reviewed `EVIDENCE_CAPABILITY_PROVED` establishes both (1) a concrete reproducible authoritative path proving old-path entry, nonterminality through successor authority, successor-before-old-result ordering, and finalized no-mutation state, and (2) a permitted practical reproducible overlap mechanism. Artificial delays, busy loops, application-selected delay endpoints, added path markers/events, favorable retries, replacement trials, and discarded trials are prohibited. Missing either capability yields `EVIDENCE_CAPABILITY_NOT_PROVED` and keeps Stage B blocked.
+
+If automated read-only inspection is unavailable, a documented manual read-only procedure may be used, but lack of access is not evidence. Raw evidence cannot authorize `PASS` or `FAIL`; only the future independent verifier produces verified trial and scenario results.
 
 Any future deployment requires separate authorization and must be performed through GenLayer Studio at <https://studio.genlayer.com/contracts>, with the selected network explicitly verified as GenLayer Bradbury Testnet. No deployment script belongs in this requirements-stage directory.

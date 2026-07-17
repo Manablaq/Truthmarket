@@ -4,6 +4,8 @@ Status: **requirements-stage feasibility work only**. Gate 1 is the only complet
 
 Source baseline: `0c73afa73a2cdb31b12b59095f5d19ac06e9db9d`.
 
+The finalized Bradbury Studio ABI evidence and its strict limitations are recorded in `BRADBURY_ABI_PREFLIGHT.md`. That preflight narrows the probe view design but does not prove stale-write protection, ordering, or Gate 2.
+
 ## 1. Purpose and capability
 
 Gate 2 must prove on GenLayer Bradbury that, after authoritative state makes attempt N nonactive and creates successor N+1, execution of N cannot commit protected mutations before or after N+1 succeeds. N+1 must remain executable. After N+1 finalizes `SUCCEEDED`, stale N cannot alter the successor result, protected value, counters, attempt history, lifecycle, latest-attempt pointer, or derived active-attempt identity.
@@ -134,6 +136,30 @@ Retry rejects an active, `SUCCEEDED`, nonlatest, unknown, already-used, zero, or
 
 ## 6. Conceptual future ABI — not implemented here
 
+The following fixed structured read models are the frozen intended Stage A ABI. They are a Gate 2 design derived from the demonstrated Bradbury type features, not exact dataclasses already compiled or deployed by the ABI preflight:
+
+```python
+@dataclass
+class Gate2AttemptView:
+    request_id: int
+    status: str
+    candidate_value: int
+    predecessor_id: Optional[int]
+
+
+@dataclass
+class Gate2StateView:
+    request_count: int
+    latest_request_id: Optional[int]
+    lifecycle_status: str
+    current_value: int
+    execution_count: int
+    derived_active_attempt_id: Optional[int]
+    attempts: list[Gate2AttemptView]
+```
+
+`Gate2StateView.attempts` is the complete bounded Gate 2 probe history in ascending request-ID order. It belongs only to this probe and creates no production-market history or unbounded production ABI requirement. The Stage A Gate 2 probe SHALL retain an explicit `__init__` method because every successful Studio schema experiment in this preflight used one, while the tested minimal contract without `__init__` failed schema loading. This is a conservative probe-design requirement based on observed Studio behavior, not a claim that every GenLayer contract universally requires `__init__`.
+
 ```text
 request_probe(candidate_value: int) -> int
 expire_probe(attempt_id: int) -> string
@@ -141,11 +167,15 @@ retry_probe(predecessor_id: int, candidate_value: int) -> int
 execute_probe(attempt_id: int) -> string
 cancel_probe() -> string
 terminalize_probe() -> string
-get_state() -> string
-get_attempt(attempt_id: int) -> string
+get_state() -> Gate2StateView
+get_attempt(attempt_id: int) -> Gate2AttemptView
 ```
 
 All writes are nonpayable. `execute_probe` is permissionless, accepts only the attempt identifier, and loads the stored candidate. `expire_probe`, `cancel_probe`, and `terminalize_probe` are permissionless scenario-construction hooks, not production authorization design. `terminalize_probe()` is a probe-only terminal-state construction hook and proves no production finalization, settlement, payout, or timing behavior. No reset method or generic supersede method is permitted.
+
+Frozen Gate 2 API behavior requirement: `get_attempt` rejects an unknown identifier. It MUST NOT return a fabricated default attempt, and the rejection MUST NOT mutate any state. This is a design requirement, not behavior proved by the Bradbury ABI preflight.
+
+The exact `Gate2StateView` and `Gate2AttemptView` dataclasses MUST pass Studio schema generation or another authorized compiler check before Stage A can be approved. The preflight proved only the exact nested structure recorded in `BRADBURY_ABI_PREFLIGHT.md`; it did not prove every arbitrary dataclass, `Optional[int]` returning `None` end to end, or the final Gate 2 implementation source. If this exact ABI fails compilation or schema generation, Stage A stops for requirements review rather than silently changing the ABI.
 
 ## 7. Stable scenarios
 
@@ -229,6 +259,21 @@ First-observation chronology is not transaction-order proof. Wall-clock timestam
 
 The conceptual ordering-evidence allowlist is `CONSENSUS_HEIGHT`, `FINALIZATION_HEIGHT`, `TRANSACTION_ORDER_INDEX`, `HISTORICAL_STATUS`, `REEXECUTION_TRACE`, `CONFLICT_TRACE`, and `UNAVAILABLE`. No non-`UNAVAILABLE` type may be used until its Bradbury field source and ordering semantics are independently proven and frozen. For an executed trial, `UNAVAILABLE` forces `INCONCLUSIVE`; a trial that never obtained its required old-execution hash remains `NOT_RUN` by higher-priority trial classification. If authoritative ordering is unavailable, Gate 2 cannot pass.
 
+### 9.1 Staged evidence-capability gate
+
+Stage A is limited to the local Gate 2 probe, its local model/unit and compiler/ABI tests, a read-only evidence-capability inspection script or documented inspection procedure, and focused documentation. It excludes the full live runner, independent verifier executable, deployment manifests and tooling, accounts, signers, wallet handling, funding, live transaction submission, and production V4.
+
+Stage A ends with exactly `EVIDENCE_CAPABILITY_PROVED` or `EVIDENCE_CAPABILITY_NOT_PROVED`. `EVIDENCE_CAPABILITY_PROVED` requires both of the following, conjunctively:
+
+1. a concrete, independently reproducible authoritative evidence path proves old intelligent-path entry, proves old execution remained nonterminal through successor authority, proves successor authority preceded the old execution's authoritative result, and uses finalized state to prove that old execution committed no protected mutation; and
+2. a permitted, practical, independently reproducible overlap mechanism uses the approved intelligent operation without artificial sleep, busy loops, application-selected delay endpoints, added state markers, events added solely for path-entry proof, favorable retries, replacement trials, or discarded trials.
+
+Every accepted evidence source must freeze its exact provider/interface, API or RPC method, request parameters, response fields, types and nullability, authority/finality meaning, historical and post-finalization availability, comparison algorithm, state-version correlation, old-path semantics, conflict/re-execution semantics, independent reproduction procedure, and raw-response capture and hash procedure. Conceptual labels, rendered UI text, polling timestamps, runner observation order, submission order, and account nonces do not prove capability.
+
+If either authoritative evidence capability or the practical permitted overlap mechanism is missing, the result is `EVIDENCE_CAPABILITY_NOT_PROVED`, Gate 2 remains inconclusive, and Stage B remains blocked. Incomplete, contradictory, integrity-defective, or assumption-based inspection instead requires `REQUEST_CHANGES`. When automated read-only network inspection is unavailable, a documented manual read-only inspection procedure may be used; lack of access is never capability proof.
+
+Stage B may be planned only after independent Stage A review, passing local/compiler/ABI tests, structured-read proof, `EVIDENCE_CAPABILITY_PROVED`, and separate review of the exact evidence fields and comparison algorithm. Even then, Stage B planning does not authorize deployment, accounts, signers, funding, or transactions. Raw evidence remains unable to authorize `PASS` or `FAIL`; only the independent verifier may produce verified trial and scenario results.
+
 ## 10. Transaction finality
 
 `waitForTransactionReceipt()` is only a barrier. Conclusions require typed `getTransaction({hash})` fields. Ordinary successful writes require:
@@ -311,6 +356,8 @@ This safe-integer probe/evidence envelope does not replace the production archit
 
 Canonicalization accepts only null, booleans, safe integers, valid Unicode scalar strings, arrays, and objects with string keys.
 
+Canonicalization is entirely off-chain. The contract returns the structured typed values in section 6 and does not generate canonical JSON. The future runner preserves the raw typed RPC result and its complete envelope without treating Studio or RPC presentation formatting as canonical evidence. The independent verifier maps that typed result to the frozen logical state, applies every rule in this section, emits the exact canonical UTF-8 bytes, and computes SHA-256.
+
 - No Unicode normalization occurs. NFC, NFD, NFKC, and NFKD are prohibited.
 - Unpaired surrogates and invalid scalar sequences reject; replacement with U+FFFD is prohibited.
 - Quote and backslash escape as `\"` and `\\`.
@@ -329,6 +376,8 @@ The golden vectors in `fixtures/canonicalization-vectors.json` are normative. Py
 
 ## 14. Canonical protected snapshot
 
+The independent verifier constructs the canonical protected snapshot from the raw structured read. The contract does not return canonical text, and the runner's structured-result claim is not verified merely because it decoded successfully.
+
 The canonical state includes exactly:
 
 ```text
@@ -341,7 +390,7 @@ requests sorted by request_id
 derived_active_attempt_id
 ```
 
-Each request includes every normative attempt-record field. Rejection evidence retains both raw canonical text and SHA-256 and requires byte equality, digest equality, and an empty observed mutation set.
+Each request includes every normative attempt-record field. The runner retains the raw typed before/after results and envelopes. The verifier-produced rejection evidence retains canonical text and SHA-256 and requires byte equality, digest equality, and an independently recomputed empty observed mutation set.
 
 ## 15. Evidence, mechanical verdicts, and trust anchor
 
