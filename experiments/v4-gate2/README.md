@@ -2,11 +2,18 @@
 
 This directory freezes the requirements, machine-readable specifications, canonicalization vectors, deterministic local model, scheduler harness model, offline-verifier rules, and local Stage A probe for Gate 2 stale-write protection.
 
-The probe is a bounded, nonproduction local implementation only; it retains at most three attempts, is not deployed, and does not include a deployment runner. Gate 1 remains the only completed feasibility gate. Production V4 remains blocked.
+The probe is a bounded, nonproduction local implementation only; it retains at most three attempts, is not deployed, and does not include a deployment runner. Gate 1 remains the only completed numbered feasibility gate; no Gate 2 forensic verdict has been proved.
+
+## Release-policy clarification
+
+Gate 2's **Forensic Assurance Research** track is no longer a global **Product Release Readiness** blocker. Its evidence capability remains `EVIDENCE_CAPABILITY_NOT_PROVED`, and the optional controlled forensic experiment remains `BLOCKED_PENDING_SEPARATE_AUTHORIZATION`. Product V4 planning and ordinary implementation may proceed through the mandatory product-release checklist in [V4_RELEASE_POLICY.md](V4_RELEASE_POLICY.md); unresolved forensic observability must not be represented as solved.
+
+This documentation change grants no authorization for deployment, GenLayer Studio use, wallet access, funding, transaction signing or submission, production release, or Builder Program submission.
 
 ## Contents
 
 - `GATE2_REQUIREMENTS.md`: normative scope, invariant, retry ancestry, evidence, and verdict rules.
+- `V4_RELEASE_POLICY.md`: two-track Product Release Readiness and Forensic Assurance Research boundary.
 - `BRADBURY_ABI_PREFLIGHT.md`: finalized structured-read ABI evidence and its explicit nonclaims.
 - `EVIDENCE_CAPABILITY_PREFLIGHT.md`: current unproved ordering/overlap capability status and unfilled inspection template.
 - `VERIFIER_SPEC.md`: future independent offline evidence-verifier contract.
@@ -40,7 +47,7 @@ node --test \
 
 The Python and Node canonicalizers are independent implementations checked against frozen bytes and hashes. The local probe tests execute the actual probe source through a local GenLayer API stub and compare its deterministic transitions with the authoritative model. Local probe, model, and scheduler tests prove only their specified local behavior, never Bradbury execution or ordering semantics.
 
-Current Stage A status is local implementation only. Exact Studio schema generation for the frozen ABI, `Optional[int] -> None` end-to-end behavior, authoritative evidence capability, and a practical overlap mechanism remain unproved. `EVIDENCE_CAPABILITY_NOT_PROVED` applies, so Stage B remains blocked.
+Current Stage A status is local implementation only. The exact committed Stage A source subsequently derived a Bradbury schema through the read-only schema interface, but `Optional[int] -> None` end-to-end deployed behavior, authoritative evidence capability, and a practical overlap mechanism remain unproved. `EVIDENCE_CAPABILITY_NOT_PROVED` applies, so Stage B of the optional forensic experiment remains blocked; that status does not block ordinary Product Release Readiness work.
 
 The finalized ABI preflight proves only the exact deployed source's Studio schema generation, Bradbury deployment and finalized execution, demonstrated nested dataclass/list serialization, `Optional[int]` schema acceptance, and logical decoded `get_state` result recorded in `BRADBURY_ABI_PREFLIGHT.md`. The raw RPC envelope was not independently preserved in this documentation amendment. It does not prove that the larger Gate 2 dataclasses compiled or deployed.
 
@@ -50,11 +57,11 @@ Verdict helpers in `tests/support/` validate structural contracts and compose in
 
 ## Remaining authorization boundary
 
-The following remain unauthorized: Bradbury runner, verifier executable, account setup, funding, wallet use, deployment, transaction submission, production V4 code, commit, push, or pull request. The local Stage A probe does not authorize any of them.
+The following remain unauthorized by this Gate 2 record: the Bradbury forensic runner, verifier executable, controlled forensic experiment, account setup, funding, wallet use, deployment, and transaction submission. Ordinary V4 planning is `AUTHORIZED_TO_PLAN` under [V4_RELEASE_POLICY.md](V4_RELEASE_POLICY.md); Product V4 integration is `NOT_STARTED`, and this record does not itself authorize a production release or Builder Program submission.
 
 Authoritative ordering metadata or trace support may be unavailable or lack verified semantics. In that case the live-overlap trials and Gate 2 must remain `INCONCLUSIVE`; polling chronology cannot be substituted.
 
-Stage A remains limited to the local probe, local/model/compiler/ABI tests, read-only evidence-capability inspection, and focused documentation. Stage B remains blocked until independently reviewed `EVIDENCE_CAPABILITY_PROVED` establishes both (1) a concrete reproducible authoritative path proving old-path entry, nonterminality through successor authority, successor-before-old-result ordering, and finalized no-mutation state, and (2) a permitted practical reproducible overlap mechanism. Artificial delays, busy loops, application-selected delay endpoints, added path markers/events, favorable retries, replacement trials, and discarded trials are prohibited. Missing either capability yields `EVIDENCE_CAPABILITY_NOT_PROVED` and keeps Stage B blocked.
+Stage A remains limited to the local probe, local/model/compiler/ABI tests, read-only evidence-capability inspection, and focused documentation. Stage B of **Forensic Assurance Research** remains blocked until independently reviewed `EVIDENCE_CAPABILITY_PROVED` establishes both (1) a concrete reproducible authoritative path proving old-path entry, nonterminality through successor authority, successor-before-old-result ordering, and finalized no-mutation state, and (2) a permitted practical reproducible overlap mechanism. Artificial delays, busy loops, application-selected delay endpoints, added path markers/events, favorable retries, replacement trials, and discarded trials are prohibited. Missing either capability yields `EVIDENCE_CAPABILITY_NOT_PROVED` and keeps the optional forensic Stage B blocked, without blocking the separate Product Release Readiness track.
 
 If automated read-only inspection is unavailable, a documented manual read-only procedure may be used, but lack of access is not evidence. Raw evidence cannot authorize `PASS` or `FAIL`; only the future independent verifier produces verified trial and scenario results.
 
