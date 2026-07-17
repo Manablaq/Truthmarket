@@ -141,6 +141,26 @@ class Gate2ProbeAbiTests(unittest.TestCase):
                 self.assertEqual(annotation_text(method.returns), return_type)
                 self.assertEqual(decorator_text(method), {decorator})
 
+    def test_persistent_storage_uses_only_supported_sized_integer_annotations(self):
+        storage_annotations = {
+            item.target.id: annotation_text(item.annotation)
+            for item in self.contract.body
+            if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name)
+        }
+        self.assertEqual(
+            storage_annotations,
+            {
+                "requests": "TreeMap[str, str]",
+                "request_count": "u64",
+                "latest_request_id": "u64",
+                "lifecycle_status": "str",
+                "current_value": "i64",
+                "execution_count": "u64",
+            },
+        )
+        self.assertNotIn("int", storage_annotations.values())
+        self.assertNotIn("Optional[int]", storage_annotations.values())
+
     def test_explicit_constructor_is_present_and_initializes_only_probe_state(self):
         constructor = self.contract_methods["__init__"]
         assigned = {
@@ -169,13 +189,30 @@ class Gate2ProbeAbiTests(unittest.TestCase):
             and isinstance(node.targets[0], ast.Attribute)
             and node.targets[0].attr == "latest_request_id"
         )
-        self.assertIsNone(ast.literal_eval(latest_assignment.value))
+        self.assertEqual(annotation_text(latest_assignment.value), "NO_ATTEMPT_ID")
         storage_annotations = {
             item.target.id: annotation_text(item.annotation)
             for item in self.contract.body
             if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name)
         }
-        self.assertEqual(storage_annotations["latest_request_id"], "Optional[int]")
+        self.assertEqual(storage_annotations["latest_request_id"], "u64")
+
+        constants = {
+            node.targets[0].id: ast.literal_eval(node.value)
+            for node in TREE.body
+            if isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and isinstance(node.value, ast.Constant)
+        }
+        self.assertEqual(constants["NO_ATTEMPT_ID"], 0)
+
+        converter_source = ast.get_source_segment(
+            SOURCE, self.contract_methods["_latest_request_id_view"]
+        )
+        self.assertIn("self.latest_request_id == NO_ATTEMPT_ID", converter_source)
+        self.assertIn("return None", converter_source)
+        self.assertIn("return int(self.latest_request_id)", converter_source)
 
     def test_execute_accepts_only_attempt_id_and_uses_stored_candidate(self):
         execute = self.contract_methods["execute_probe"]
