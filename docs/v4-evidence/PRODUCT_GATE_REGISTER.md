@@ -1,6 +1,6 @@
 # TruthMarket V4 BF-0 product-gate register
 
-Status: `DRAFT_PENDING_CANDIDATE_COMMIT_AND_EXTERNAL_REVIEW`
+Status: `CANDIDATE_PACKAGE_NO_IN_PACKAGE_APPROVAL`
 
 ## Classification and immutable-locator rule
 

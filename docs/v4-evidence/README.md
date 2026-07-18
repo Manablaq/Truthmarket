@@ -1,6 +1,6 @@
 # TruthMarket V4 BF-0 evidence normalization index
 
-Status: `DRAFT_PENDING_CANDIDATE_COMMIT_AND_EXTERNAL_REVIEW`
+Status: `CANDIDATE_PACKAGE_NO_IN_PACKAGE_APPROVAL`
 
 ## Baseline and authority
 
@@ -70,28 +70,38 @@ No production V4 source, frozen production ABI artifact, production
 schema artifact, V4 deployment address, or V4 end-to-end Bradbury
 evidence exists.
 
-## BF-0 completion state
+## BF-0 immutable in-package state
 
 - Seven required deliverables plus this index created: `YES`
 - Source and fixture identities recorded: `YES`
 - Historical Stage A gaps explicitly classified: `YES`
-- Immutable candidate commit fixed: `NO`
-- External local-validation record bound to candidate: `NO`
-- External CI record bound to candidate: `NO`
-- External independent review attestation bound to candidate: `NO`
-- Zero unresolved P0-P2 findings established: `NO`
-- BF-0 accepted: `NO`
+- Candidate-object identity protocol defined: `YES`
+- Exact candidate commit/tree/parent embedded in this package: `NO_BY_DESIGN`
+- External local-validation evidence included in this package: `NO`
+- External CI evidence included in this package: `NO`
+- External independent-review attestation included in this package: `NO`
+- Zero unresolved P0/P1/P2/P3 findings established by this package alone: `NO`
+- BF-0 accepted by this package alone: `NO`
 
 ## External review and acceptance protocol
 
 No author may edit this package to fill an in-package approval field.
 
-The next immutable candidate commit is named `C1`. Local validation,
-CI, and independent-review records must remain external to `C1` and
-must reference its exact commit SHA, Git tree, reviewed file identities,
-timestamps, environment or run identifiers, findings, and decision.
+The reviewed candidate object is the immutable Git commit containing these
+package bytes. Because that object cannot embed its own SHA/tree without
+changing itself, an external candidate-identity record must capture the exact
+repository, commit, tree, parent, and eight reviewed file identities after
+commit formation.
 
-BF-0 acceptance, if later granted, is the evidence object
-`C1 + external independent attestation`. Any bookkeeping commit must
-reference that object and must not imply that changed bookkeeping bytes
-were reviewed as part of `C1`.
+Local validation, CI, and independent-review records must remain external and
+must all bind to that same candidate object. The independent-review input must
+include a read-only Git bundle or equivalent complete canonical object set
+that permits offline `git fsck`, `git cat-file`, `git rev-parse`, `git ls-tree`,
+`git diff-tree`, parent/root-tree verification, and extraction of the eight
+reviewed documents without relying on author-side transcripts.
+
+BF-0 acceptance, if later granted externally, is the exact candidate object
+plus the complete hash-bound external evidence set required by `D-009`. Any
+bookkeeping commit must reference that object and evidence set, must not alter
+the candidate bytes, and must not imply that its own changed bytes were
+reviewed as part of the candidate.

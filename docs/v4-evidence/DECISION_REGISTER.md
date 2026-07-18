@@ -1,6 +1,6 @@
 # TruthMarket V4 BF-0 decision register
 
-Status: `DRAFT_PENDING_CANDIDATE_COMMIT_AND_EXTERNAL_REVIEW`
+Status: `CANDIDATE_PACKAGE_NO_IN_PACKAGE_APPROVAL`
 
 Every entry names an accountable role rather than silently assigning a
 decision to implementation code. `OPEN_BLOCKING`, `NOT_AUTHORIZED`,
@@ -16,23 +16,31 @@ decision to implementation code. `OPEN_BLOCKING`, `NOT_AUTHORIZED`,
 | `D-006` | Freeze the public V4 ABI | BF-4 owner | Gate 5 and every ABI-affecting product gate closed | Single-write candidate / revised payout ABI | Architecture candidate ABI | `OPEN_DEPENDENCY` | Cannot freeze before Gate 5 |
 | `D-007` | Derive and freeze a production V4 schema | Production source reviewer | Exact authorized and frozen production source | Read-only derivation with complete retained output | Compatibility baseline and PRR-03 | `SOURCE_ABSENT` | No production derivation exists |
 | `D-008` | Begin frontend V4 integration | Frontend integration owner | Frozen source, ABI, schema, DTO and configuration manifest | Integrate / remain V3 | Readiness audit | `NOT_STARTED_NOT_AUTHORIZED` | BF-0 grants no integration authority |
-| `D-009` | Accept BF-0 evidence normalization | Independent reviewer | Immutable candidate commit C1, external validation records bound to C1, external independent attestation bound to C1, and zero unresolved P0-P2 findings | Accept / request changes | C1 Git commit/tree plus external validation and review attestations | `PENDING_CANDIDATE_COMMIT_AND_EXTERNAL_REVIEW` | The candidate package cannot approve itself or be edited to manufacture its own approval |
+| `D-009` | Accept BF-0 evidence normalization | Independent reviewer | Immutable candidate object containing this package, external candidate-identity record, local and CI validation records bound to that same object, external independent attestation bound to that same object, and zero unresolved P0/P1/P2/P3 findings | Accept / request changes | Exact candidate Git commit/tree plus the complete hash-bound external identity, validation, CI, and independent-review evidence set | `NO_IN_PACKAGE_ACCEPTANCE_DECISION` | The candidate package cannot approve itself or be edited to manufacture its own approval; only an external record may decide this row |
 | `D-010` | Represent TruthMarket as Builder Program ready | Release authority | PRR-01 through PRR-20 and retained claim evidence | Ready / not ready | V4 release policy | `NOT_READY` | No submission-readiness claim |
 
 ## Immutable candidate and external-attestation protocol
 
-1. Candidate commit `C1` contains the complete BF-0 package with all
-   statuses still pending.
-2. Local and CI validation records are external artifacts. Each must
-   identify the exact `C1` commit and tree, command, resolved environment,
+1. The candidate object is the immutable Git commit containing the complete
+   BF-0 package bytes under review. Its own commit and tree identities cannot
+   be embedded in those same bytes without changing the object.
+2. An external candidate-identity record created after commit formation must
+   capture the exact repository, commit, tree, parent, eight output paths,
+   and output-file identities.
+3. Local and CI validation records are external artifacts. Each must bind to
+   that same candidate object and identify the command, resolved environment,
    timestamps, exit code, and retained output digest or run URL.
-3. Independent review is an external attestation that identifies `C1`,
-   the reviewed artifact identities, reviewer, date, findings, and decision.
-4. BF-0 acceptance, if granted, is the pair `C1 + external attestation`;
-   it is not created by editing `C1`.
-5. Any later bookkeeping commit must reference `C1` and the attestation,
-   must not alter the historical bytes of `C1`, and must not claim that
-   its own changed bytes were part of the original review.
+4. Independent review is an external attestation that binds to the same
+   candidate object and reviewed artifact identities, and records reviewer,
+   date, all P0/P1/P2/P3 findings, and decision. Its review input must include
+   a read-only Git bundle or equivalent complete canonical object set that
+   permits offline commit, parent, root-tree, subtree, blob, and diff checks.
+5. BF-0 acceptance, if granted externally, is the exact candidate object plus
+   the complete hash-bound evidence set satisfying `D-009`; it is never
+   created by editing the candidate object.
+6. Any later bookkeeping commit must reference that exact candidate object
+   and external evidence set, must not alter the historical candidate bytes,
+   and must not claim that its own changed bytes were part of the review.
 
 ## Change control
 

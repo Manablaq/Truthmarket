@@ -34,12 +34,14 @@ acceptance expectations only; it is not an execution record.
 
 ## Required external local-validation record
 
-No local command is represented as acceptance evidence until an
-external record exists for the immutable candidate commit `C1`.
+No local command is represented as acceptance evidence by this package.
+An external record must bind to the immutable candidate object: the Git
+commit containing this package, as identified by the external candidate-
+identity record.
 
 The record must contain:
 
-1. exact repository URL, `C1` commit SHA, `C1` tree SHA, and parent SHA;
+1. exact repository URL, candidate commit SHA, candidate tree SHA, and parent SHA;
 2. exact command ID and fully expanded command;
 3. start and end timestamps;
 4. working-directory clean-state proof before and after execution;
@@ -57,7 +59,7 @@ author feedback, but it is not the candidate-commit validation record.
 
 ## Required external CI record
 
-The CI record must bind the exact `C1` commit and include the workflow
+The CI record must bind the exact same candidate commit and include the workflow
 run URL and ID, job URL and ID, conclusion, resolved Node version,
 available runner-image identity, timestamps, and retained logs or
 downloadable log-artifact digest.
