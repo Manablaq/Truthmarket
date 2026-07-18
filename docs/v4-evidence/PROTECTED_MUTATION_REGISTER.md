@@ -19,7 +19,7 @@ method names.
 | --- | --- | --- |
 | `AUTH` | Caller identity, beneficiary identity, or authorization | Prove the exact authorized actor and reject substitutes before protected mutation. |
 | `TIME` | Contract time, deadline, window, or boundary arithmetic | Prove the selected inclusive/exclusive rule and overflow-safe conversion before mutation. |
-| `VALUE` | Attached value, payability, contract balance, or economic amount | Prove exact accepted value category and reject zero/wrong/unexpected value without retention or mutation. |
+| `VALUE` | Attached value, payability, contract balance, or economic amount | Prove the exact accepted value category for the operation or transition, and reject every disallowed zero, wrong, missing, excess, or unexpected value without retention or protected mutation. |
 | `DET` | Deterministic text processing, canonicalization, serialization, digest, or arithmetic | Prove canonical bytes/values and bounds before allocation or mutation. |
 | `AI` | Intelligent or nondeterministic return | Repeat all authority and stale/terminal guards after return and before first protected mutation. |
 | `MSG` | Deferred external-message emission or payout dispatch | Treat emission as dispatch only, never as observable payment completion. |
