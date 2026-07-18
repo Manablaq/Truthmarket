@@ -19,6 +19,11 @@ This package normalizes evidence boundaries. It does not implement V4,
 change the public ABI, derive a network schema, deploy a contract,
 perform a wallet operation, or advance a release-policy status.
 
+Across every governing approval, workstream exit, completion, deployment,
+production-review, and acceptance rule, progress is fail-closed unless zero
+unresolved P0/P1/P2/P3 findings remain. No weaker historical threshold may
+supersede that rule.
+
 ## Package
 
 The package contains seven required BF-0 evidence/register deliverables
@@ -94,8 +99,13 @@ repository, commit, tree, parent, and eight reviewed file identities after
 commit formation.
 
 Local validation, CI, and independent-review records must remain external and
-must all bind to that same candidate object. The independent-review input must
-include a read-only Git bundle or equivalent complete canonical object set
+must all bind to that same candidate object. TC-10 eligibility requires a
+pull-request run that explicitly checks out the candidate head SHA, verifies
+`HEAD` and `HEAD^{tree}` against exactly one `BF0-Candidate-Commit` and
+`BF0-Candidate-Tree` marker in the external PR body, and retains those asserted
+and resolved identities as a downloadable artifact. A push run may remain a
+regression check but is not TC-10 candidate evidence. The independent-review
+input must include a read-only Git bundle or equivalent complete canonical object set
 that permits offline `git fsck`, `git cat-file`, `git rev-parse`, `git ls-tree`,
 `git diff-tree`, parent/root-tree verification, and extraction of the eight
 reviewed documents without relying on author-side transcripts.
@@ -105,3 +115,12 @@ plus the complete hash-bound external evidence set required by `D-009`. Any
 bookkeeping commit must reference that object and evidence set, must not alter
 the candidate bytes, and must not imply that its own changed bytes were
 reviewed as part of the candidate.
+
+
+## Direct command-input closure
+
+`PRODUCT_GATE_REGISTER.md` defines complete immutable direct-input closures
+for TC-02, TC-03, and TC-04. Every gate or PRR row naming one of those commands
+must include its corresponding closure locator. A missing source, fixture,
+specification, support module, model, scheduler, probe, or test file is a
+fail-closed traceability error rather than an implied dependency.

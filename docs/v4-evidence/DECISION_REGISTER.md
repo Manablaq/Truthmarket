@@ -29,7 +29,11 @@ decision to implementation code. `OPEN_BLOCKING`, `NOT_AUTHORIZED`,
    and output-file identities.
 3. Local and CI validation records are external artifacts. Each must bind to
    that same candidate object and identify the command, resolved environment,
-   timestamps, exit code, and retained output digest or run URL.
+   timestamps, exit code, and retained output digest or run URL. A TC-10-
+   eligible pull-request run must check out the exact candidate head SHA, read
+   exactly one `BF0-Candidate-Commit` and `BF0-Candidate-Tree` marker from the
+   external PR body, fail unless `HEAD` and `HEAD^{tree}` equal those markers,
+   and retain the asserted and resolved identities as a downloadable artifact.
 4. Independent review is an external attestation that binds to the same
    candidate object and reviewed artifact identities, and records reviewer,
    date, all P0/P1/P2/P3 findings, and decision. Its review input must include
@@ -54,3 +58,15 @@ A decision changes only through a hash-bound reviewed record that states:
 
 Silence, implementation progress, a successful preview build, or an
 isolated test pass never changes a decision status.
+
+## C3 independent-review correction boundary
+
+The independent C3 review record with SHA-256
+`dd42c357685fed8a9f4f419885413dcd599d0c0a622b03194f44d13764eaa4c2`
+returned `REQUEST_CHANGES` for F-004 through F-007. The successor candidate
+under review contains corrections intended to normalize every cited
+P0/P1/P2/P3 threshold, close direct command-input traceability for TC-02 through
+TC-04, enforce exact-candidate CI identity, and state the five claim `ZERO_ONLY`
+rules. Only external validation and independent review may determine whether
+those findings are resolved; this section does not change `D-009`, any PRR
+status, or BF-0 acceptance.

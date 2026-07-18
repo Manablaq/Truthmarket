@@ -9,14 +9,17 @@ Status: `CANDIDATE_PACKAGE_NO_IN_PACKAGE_APPROVAL`
 - BF-0 baseline tree: `c0991d4d0df247dfd41bf08977f5eff900a37873`
 - Capture timestamp: `2026-07-17T23:18:43+01:00`
 - Digest algorithm: SHA-256 over exact Git-object or repository bytes
-- Tracked V4 evidence inputs: `38`
-- Total normalized inputs: `46`
+- Tracked baseline V4 evidence inputs: `38`
+- Total normalized baseline inputs: `46`
+- Candidate-corrected governing objects: `5`
 - Production V4 source: `ABSENT`
 - Production V4 schema: `ABSENT`
 
-This manifest binds the baseline evidence inputs used by BF-0. It does
-not assert that a future production V4 implementation exists, passes
-any Product Release Readiness requirement, or is authorized.
+This manifest binds the 46 baseline evidence inputs used by BF-0 and, in a
+separate table, the five governing/CI objects corrected by the immutable
+candidate containing this package. It does not assert that a future production
+V4 implementation exists, passes any Product Release Readiness requirement, or
+is authorized.
 
 The seven required BF-0 deliverables and the index are intentionally
 excluded from their own input-hash table. Their exact bytes are bound by
@@ -107,16 +110,16 @@ immutable candidate object identified by the external identity record.
 
 | Path | Bytes | SHA-256 | Evidence boundary |
 | --- | --- | --- | --- |
-| `.github/workflows/ci.yml` | 539 | `e97b79ff3fb562a43656e0b781472e50b300982d1d1f59977c07d454bec9c0ac` | Current CI command declaration |
+| `.github/workflows/ci.yml` | 539 | `e97b79ff3fb562a43656e0b781472e50b300982d1d1f59977c07d454bec9c0ac` | Current CI command declaration; immutable baseline snapshot, superseded for candidate governing use by the candidate-corrected table below |
 | `contracts/truth_market.py` | 23686 | `b07a8983a4c879f64a33de33408f47d5062e7973903df23224a365c3afb4bee0` | Current V3 contract; not V4 evidence |
 | `docs/GENLAYER_COMPATIBILITY_BASELINE.md` | 5331 | `81fabb8d07a59f8500c6612a6ab9ec2da31091568bf566e5134f53676379b3b8` | Pinned compatibility requirements |
-| `docs/V4_ARCHITECTURE.md` | 132575 | `92411000a0d83c2717ae7f8d57357d4644bd317c243f15521836fa4b8d544b22` | V4 specification, planning, or audit record |
-| `docs/V4_BOUNDED_FOUNDATION_PLAN.md` | 35879 | `3c0fba8d7f1e4a2f0cfc785b910add4d8c1fb973cdd421fdd516346d46690e74` | V4 specification, planning, or audit record |
+| `docs/V4_ARCHITECTURE.md` | 132575 | `92411000a0d83c2717ae7f8d57357d4644bd317c243f15521836fa4b8d544b22` | V4 specification, planning, or audit record; immutable baseline snapshot, superseded for candidate governing use by the candidate-corrected table below |
+| `docs/V4_BOUNDED_FOUNDATION_PLAN.md` | 35879 | `3c0fba8d7f1e4a2f0cfc785b910add4d8c1fb973cdd421fdd516346d46690e74` | V4 specification, planning, or audit record; immutable baseline snapshot, superseded for candidate governing use by the candidate-corrected table below |
 | `docs/V4_ECONOMICS_AND_SAFETY.md` | 26008 | `bd7202c708d3e0f1e6f4bf97ad60701c27370e9c329bd4cfc49ee58b87360ca2` | V4 specification, planning, or audit record |
 | `docs/V4_IMPLEMENTATION_READINESS_AUDIT.md` | 20435 | `487ddb9b61f1561a953d37a3cf6ade29f904b80745966963bd18c32de392db60` | V4 specification, planning, or audit record |
-| `docs/V4_MIGRATION_PLAN.md` | 20060 | `0a487c4332da3de1c9c070bd6a1b11c862c5d31d6227cec57d3d06ae2dd0973b` | V4 specification, planning, or audit record |
+| `docs/V4_MIGRATION_PLAN.md` | 20060 | `0a487c4332da3de1c9c070bd6a1b11c862c5d31d6227cec57d3d06ae2dd0973b` | V4 specification, planning, or audit record; immutable baseline snapshot, superseded for candidate governing use by the candidate-corrected table below |
 | `docs/V4_STATE_MACHINE.md` | 33019 | `22f9842968f121a872cae2b2b21e8d028c8f9712e2e3fd812444e74637c64166` | V4 specification, planning, or audit record |
-| `docs/V4_TEST_PLAN.md` | 58158 | `078d118fa6326da306c263b61ce2bbdae849f2cecff668937f75b71e39e98e3f` | V4 specification, planning, or audit record |
+| `docs/V4_TEST_PLAN.md` | 58158 | `078d118fa6326da306c263b61ce2bbdae849f2cecff668937f75b71e39e98e3f` | V4 specification, planning, or audit record; immutable baseline snapshot, superseded for candidate governing use by the candidate-corrected table below |
 | `experiments/v4-gate1/GATE1_REQUIREMENTS.md` | 9302 | `f545afccdd49839b5508c3b4f80abd5748249c5bc7650b2510c628cf24c59300` | Gate 1 requirements, tests, fixtures, or evidence |
 | `experiments/v4-gate1/GATE1_RESULTS.md` | 14890 | `60495421da2f27f04d26667f53cb340ceb7d60c60907e55e1a862a9eac25ef2c` | Gate 1 requirements, tests, fixtures, or evidence |
 | `experiments/v4-gate1/README.md` | 5592 | `a9624c7feb1da5991bcff160ba085d739a0bebd205db919b6d2f27d470b242e3` | Gate 1 requirements, tests, fixtures, or evidence |
@@ -153,6 +156,21 @@ immutable candidate object identified by the external identity record.
 | `lib/schemas.ts` | 7662 | `6d2d6ce6b66612fb419f773b3445ef83d5c2b563346aa13685da854266001ea1` | Current V3 frontend/configuration boundary |
 | `package-lock.json` | 238043 | `f1c3989d1c5afea4ed0b762990577dbd51a52afae5ac8387dba918648a7bbde6` | Current JavaScript dependency/tooling boundary |
 | `package.json` | 1017 | `07bc7f9ca9d633cae071574229f16259abe80197c06fc3052f99de29b242a08b` | Current JavaScript dependency/tooling boundary |
+
+## Candidate-corrected governing object identities
+
+These five rows are not baseline claims. They bind the exact governing and CI
+bytes that must be read from the immutable candidate object identified by the
+external candidate-identity record. Their hashes are safe to embed because none
+of these five files embeds this manifest's own identity.
+
+| Object scope | Path | Bytes | SHA-256 | Evidence boundary |
+| --- | --- | --- | --- | --- |
+| `CANDIDATE_GOVERNING` | `.github/workflows/ci.yml` | 3738 | `58d2d15e062fe85ca2138d2ffff7750a8a6685c572ed412be8f598abac2a2c6e` | Candidate-corrected governing/CI object; resolve from the immutable candidate object, not the baseline commit |
+| `CANDIDATE_GOVERNING` | `docs/V4_ARCHITECTURE.md` | 132587 | `96b352d5f4b4e96a3a9021b7880b1af8d3e9ab1b282f8ebb809927be88a4d80b` | Candidate-corrected governing/CI object; resolve from the immutable candidate object, not the baseline commit |
+| `CANDIDATE_GOVERNING` | `docs/V4_BOUNDED_FOUNDATION_PLAN.md` | 35899 | `b6de343288e2b9f7ec604052ab138ba7bbe46d9e00d928f10d96346030cad63b` | Candidate-corrected governing/CI object; resolve from the immutable candidate object, not the baseline commit |
+| `CANDIDATE_GOVERNING` | `docs/V4_MIGRATION_PLAN.md` | 20078 | `c7094b373022702a7ee6b0e0de32f055608f14c22148250a9fc1d9d8aea34b75` | Candidate-corrected governing/CI object; resolve from the immutable candidate object, not the baseline commit |
+| `CANDIDATE_GOVERNING` | `docs/V4_TEST_PLAN.md` | 58217 | `29f6f114170c91c996ea5052809e080d3ac79a8253ac611fb70c74c822700bc9` | Candidate-corrected governing/CI object; resolve from the immutable candidate object, not the baseline commit |
 
 ## Exact baseline-manifest reproduction procedure
 
@@ -219,6 +237,16 @@ This procedure independently checks the baseline commit/tree and every
 listed source/fixture row. It does not validate the eight BF-0 output
 documents; the immutable candidate object and its root tree bind those bytes.
 
+## Candidate-governing-object reproduction procedure
+
+Given the candidate SHA from the external candidate-identity record, parse the
+five-row table above and verify each byte count and SHA-256 with
+`git show <candidate>:<path>`. Validation MUST fail if the row count is not five,
+a path is duplicated, or any object resolves only from the baseline rather than
+the candidate. These five identities are also the authoritative `T-ARCH`,
+`T-PLAN`, `T-MIGRATION`, `T-TEST`, and `T-CI` locator bytes in
+`PRODUCT_GATE_REGISTER.md`.
+
 ## Candidate-output and validation binding
 
 An external candidate-identity and validation record must retain:
@@ -249,5 +277,5 @@ claims require separate external records bound to the same candidate object.
    Bradbury protocol-forensic proof.
 5. V4 specifications are requirements and plans, not implementation
    evidence.
-6. A changed byte invalidates the corresponding row and requires a new
-   manifest revision.
+6. A changed byte invalidates the corresponding baseline or candidate-governing row and requires a new manifest revision.
+7. TC-02 through TC-04 command-input closures are complete only when every directly consumed file is present in the corresponding `T-TC*-INPUTS` locator.

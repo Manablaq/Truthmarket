@@ -74,7 +74,7 @@ Create reproducible baselines before new feasibility work.
 - No contradictory evidence statement remains.
 - Every artifact is bound to source/fixture hashes and exact tool versions.
 - Evidence boundaries distinguish V3, Gate 1, Gate 2 Stage A, model/specification, frontend, and future production work.
-- Zero unresolved P0, P1, or P2 documentation/evidence-normalization findings remain.
+- Zero unresolved P0, P1, P2, or P3 documentation/evidence-normalization findings remain.
 - An independent reviewer signs the evidence index.
 
 No network schema derivation is part of this documentation task. A later derivation must be separately recorded and must not require a wallet, funding, signing, or transaction.
@@ -127,7 +127,7 @@ Candidate B must define and prove:
 
 - Exactly one delivery model is selected; the other is explicitly rejected with reasoning.
 - Child failure, rollback, observability, retry, reconciliation, reentrancy, activity timing, liability, and conservation are resolved.
-- No unresolved P0, P1, or P2 finding remains in the Gate 5 package.
+- No unresolved P0, P1, P2, or P3 finding remains in the Gate 5 package.
 - Independent review accepts the model and its ABI consequences.
 - The public claim/refund portion of the ABI is eligible to freeze; it is not frozen merely by BF-1 exit.
 
@@ -263,7 +263,7 @@ Every register row must contain value name, unit, exact type, safety/conservatio
 - Boundary, over-bound, and worst-case combinations are tested.
 - Source-of-truth and downstream ABI/configuration consumers are named.
 - Independent product, security, and engineering reviews accept each selected value and margin.
-- No unresolved P0–P2 hard-value finding remains.
+- No unresolved P0/P1/P2/P3 hard-value finding remains.
 
 ## Workstream BF-4 — ABI and source manifest freeze
 
@@ -297,7 +297,7 @@ BF-4 may begin only after all relevant BF-1 through BF-3 decisions are accepted.
 - Every public method and DTO is dependency-closed and internally consistent.
 - Contract, schema, frontend types, test manifests, and documentation agree exactly.
 - ABI and source-scope artifacts are hashed, reproducible, and independently reviewed.
-- No unresolved P0–P2 ABI/source-manifest finding remains.
+- No unresolved P0/P1/P2/P3 ABI/source-manifest finding remains.
 - Freeze does not itself authorize coding, integration, or deployment.
 
 ## Workstream BF-5 — PRR-04 through PRR-08 test manifests
@@ -331,7 +331,7 @@ Every public write must record complete pre-state and post-state, identifier and
 - No probe result is accepted as a production pass.
 - The five packages and BF-4 manifests agree exactly.
 - Independent test/security review approves completeness.
-- No unresolved P0–P2 test-manifest finding remains.
+- No unresolved P0/P1/P2/P3 test-manifest finding remains.
 
 ## Workstream BF-6 — Production implementation authorization gate
 

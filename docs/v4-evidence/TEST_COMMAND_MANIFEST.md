@@ -30,7 +30,17 @@ acceptance expectations only; it is not an execution record.
 | `TC-07` | TypeScript | `npx tsc --noEmit --incremental false` | Exit `0` | Current frontend type boundary |
 | `TC-08` | Production build | `npm run build` | Exit `0` | Current Next.js application build; not V4 deployment |
 | `TC-09` | Candidate commit whitespace | `git diff-tree --check "$CANDIDATE_SHA^" "$CANDIDATE_SHA"` | Exit `0` | Candidate diff formatting only; does not execute tests |
-| `TC-10` | CI workflow declaration | `npm ci && npm run lint && npx tsc --noEmit && npm test && npm run build && git diff --check && PYTHONPYCACHEPREFIX=/tmp/truthmarket-pycache python3 -m py_compile contracts/truth_market.py` | Successful CI job bound to candidate commit | CI uses Node `22.x`; workflow Python version and runner image digest are not pinned |
+| `TC-10` | Exact-candidate pull-request CI | PR body contains exactly one `BF0-Candidate-Commit: <40-hex>` and `BF0-Candidate-Tree: <40-hex>` marker; workflow checks out the PR head SHA, fails unless the markers, event head SHA, `git rev-parse HEAD`, and `git rev-parse HEAD^{tree}` agree, then runs `npm ci && npm run lint && npx tsc --noEmit && npm test && npm run build && git diff --check && PYTHONPYCACHEPREFIX=/tmp/truthmarket-pycache python3 -m py_compile contracts/truth_market.py` and uploads `ci-candidate-identity.txt` | Successful pull-request job with `tc10_eligible=YES`, exact candidate commit/tree equality, and retained identity artifact | CI uses Node `22.x`; workflow Python version and runner image digest are not pinned; push runs record identity but are not TC-10 candidate evidence |
+
+## Exact direct command-input closures
+
+The complete direct immutable inputs consumed by the three bounded gate suites
+are defined in `PRODUCT_GATE_REGISTER.md` as `T-TC02-INPUTS`,
+`T-TC03-INPUTS`, and `T-TC04-INPUTS`. Those closures include every directly
+read probe, model, scheduler, support module, test, fixture, schema, reason-code
+specification, scenario specification, and canonicalization-vector file.
+Any gate or PRR row naming TC-02, TC-03, or TC-04 without the corresponding
+closure locator is invalid and must fail structural validation.
 
 ## Required external local-validation record
 
@@ -59,12 +69,16 @@ author feedback, but it is not the candidate-commit validation record.
 
 ## Required external CI record
 
-The CI record must bind the exact same candidate commit and include the workflow
-run URL and ID, job URL and ID, conclusion, resolved Node version,
-available runner-image identity, timestamps, and retained logs or
-downloadable log-artifact digest.
+The CI record must bind the exact same candidate commit and tree and include the
+workflow run URL and ID, job URL and ID, conclusion, event name, PR head SHA,
+external PR-body candidate markers, asserted and resolved commit/tree,
+`tc10_eligible=YES`, resolved Node/npm/Python versions, available runner-image
+identity, timestamps, complete logs, and the SHA-256 of the downloaded
+`ci-candidate-identity.txt` artifact. The record must prove that checkout and
+all commands executed against that exact object rather than a generated merge
+ref. A push result with `tc10_eligible=NO` is not candidate evidence.
 
-TC-10 remains `NOT_RUN_FOR_CANDIDATE` until that record exists.
+TC-10 remains `NOT_RUN_FOR_CANDIDATE` until that exact pull-request record exists.
 
 ## Ownership boundaries
 

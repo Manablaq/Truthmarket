@@ -9,7 +9,67 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out exact event candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Verify and record exact candidate identity
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SHA: ${{ github.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+
+          actual_commit="$(git rev-parse HEAD)"
+          actual_tree="$(git rev-parse 'HEAD^{tree}')"
+          expected_commit="$EVENT_SHA"
+          expected_tree="$actual_tree"
+          identity_source="push_event_sha"
+          tc10_eligible="NO"
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            python3 - <<'PY' > /tmp/bf0-candidate-identity.txt
+          import os
+          import re
+
+          body = os.environ.get("PR_BODY", "")
+          patterns = {
+              "commit": r"(?m)^BF0-Candidate-Commit:\s*`?([0-9a-f]{40})`?\s*$",
+              "tree": r"(?m)^BF0-Candidate-Tree:\s*`?([0-9a-f]{40})`?\s*$",
+          }
+          values = {}
+          for name, pattern in patterns.items():
+              matches = re.findall(pattern, body)
+              if len(matches) != 1:
+                  raise SystemExit(
+                      f"expected exactly one BF0-Candidate-{name.title()} marker, found {len(matches)}"
+                  )
+              values[name] = matches[0]
+          print(values["commit"])
+          print(values["tree"])
+          PY
+            expected_commit="$(sed -n '1p' /tmp/bf0-candidate-identity.txt)"
+            expected_tree="$(sed -n '2p' /tmp/bf0-candidate-identity.txt)"
+            test "$expected_commit" = "$PR_HEAD_SHA"
+            identity_source="pull_request_body_external_identity"
+            tc10_eligible="YES"
+          fi
+
+          test "$actual_commit" = "$expected_commit"
+          test "$actual_tree" = "$expected_tree"
+
+          {
+            printf 'event_name=%s\n' "$EVENT_NAME"
+            printf 'identity_source=%s\n' "$identity_source"
+            printf 'expected_candidate_commit=%s\n' "$expected_commit"
+            printf 'actual_candidate_commit=%s\n' "$actual_commit"
+            printf 'expected_candidate_tree=%s\n' "$expected_tree"
+            printf 'actual_candidate_tree=%s\n' "$actual_tree"
+            printf 'tc10_eligible=%s\n' "$tc10_eligible"
+          } | tee ci-candidate-identity.txt
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x
@@ -21,3 +81,19 @@ jobs:
       - run: npm run build
       - run: git diff --check
       - run: PYTHONPYCACHEPREFIX=/tmp/truthmarket-pycache python3 -m py_compile contracts/truth_market.py
+      - name: Record resolved validation environment
+        run: |
+          set -euo pipefail
+          {
+            printf 'git_version=%s\n' "$(git --version)"
+            printf 'node_version=%s\n' "$(node --version)"
+            printf 'npm_version=%s\n' "$(npm --version)"
+            printf 'python_version=%s\n' "$(python3 --version 2>&1)"
+            printf 'validation_result=PASS\n'
+          } | tee -a ci-candidate-identity.txt
+      - name: Retain candidate identity evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-candidate-identity-${{ github.run_id }}
+          path: ci-candidate-identity.txt
+          if-no-files-found: error
