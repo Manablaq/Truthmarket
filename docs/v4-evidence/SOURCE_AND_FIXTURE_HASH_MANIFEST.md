@@ -22,14 +22,16 @@ V4 implementation exists, passes any Product Release Readiness requirement, or
 is authorized.
 
 The seven required BF-0 deliverables and the index are intentionally
-excluded from their own input-hash table. Their exact bytes are bound by
-the immutable candidate object: the Git commit containing the package and
-its root tree. Because that object cannot embed its own identity without
-changing itself, an external candidate-identity record must capture the
-exact repository, commit, tree, parent, and eight output-file identities.
-External validation, CI, and independent-review artifacts must all bind to
-that same candidate object and remain outside it. This manifest never
-represents those external artifacts or BF-0 acceptance as in-package facts.
+excluded from their own input-hash table. Their exact bytes are bound by the
+immutable candidate object: the Git commit containing the package and its root
+tree. The complete review set is thirteen files: those eight BF-0 evidence/index
+outputs plus the five candidate-governing files in the table below. Because the
+candidate cannot embed its own identity without changing itself, an external
+candidate-identity record must capture the exact repository, commit, tree,
+parent, all thirteen paths, and all thirteen file identities. External
+validation, CI, and independent-review artifacts must all bind to that same
+candidate object and remain outside it. This manifest never represents those
+external artifacts or BF-0 acceptance as in-package facts.
 
 ## External provenance locators
 
@@ -166,7 +168,7 @@ of these five files embeds this manifest's own identity.
 
 | Object scope | Path | Bytes | SHA-256 | Evidence boundary |
 | --- | --- | --- | --- | --- |
-| `CANDIDATE_GOVERNING` | `.github/workflows/ci.yml` | 3738 | `58d2d15e062fe85ca2138d2ffff7750a8a6685c572ed412be8f598abac2a2c6e` | Candidate-corrected governing/CI object; resolve from the immutable candidate object, not the baseline commit |
+| `CANDIDATE_GOVERNING` | `.github/workflows/ci.yml` | 5027 | `e6077df3da931c47248928ee43675ffd80f527ccd555abbe2baecab45f9b614d` | Candidate-corrected governing/CI object; resolve from the immutable candidate object, not the baseline commit |
 | `CANDIDATE_GOVERNING` | `docs/V4_ARCHITECTURE.md` | 132587 | `96b352d5f4b4e96a3a9021b7880b1af8d3e9ab1b282f8ebb809927be88a4d80b` | Candidate-corrected governing/CI object; resolve from the immutable candidate object, not the baseline commit |
 | `CANDIDATE_GOVERNING` | `docs/V4_BOUNDED_FOUNDATION_PLAN.md` | 35899 | `b6de343288e2b9f7ec604052ab138ba7bbe46d9e00d928f10d96346030cad63b` | Candidate-corrected governing/CI object; resolve from the immutable candidate object, not the baseline commit |
 | `CANDIDATE_GOVERNING` | `docs/V4_MIGRATION_PLAN.md` | 20078 | `c7094b373022702a7ee6b0e0de32f055608f14c22148250a9fc1d9d8aea34b75` | Candidate-corrected governing/CI object; resolve from the immutable candidate object, not the baseline commit |
@@ -234,8 +236,10 @@ PY
 ```
 
 This procedure independently checks the baseline commit/tree and every
-listed source/fixture row. It does not validate the eight BF-0 output
-documents; the immutable candidate object and its root tree bind those bytes.
+listed source/fixture row. It does not validate the complete thirteen-file
+review set: eight BF-0 evidence/index outputs plus five candidate-governing
+files. The immutable candidate object and its root tree bind those bytes, and
+the external review protocol must enumerate, extract, and verify all thirteen.
 
 ## Candidate-governing-object reproduction procedure
 
@@ -252,8 +256,10 @@ the candidate. These five identities are also the authoritative `T-ARCH`,
 An external candidate-identity and validation record must retain:
 
 - exact candidate commit, tree, parent, and repository;
-- `git ls-tree -r --full-tree <candidate> -- docs/v4-evidence` output;
-- SHA-256 identities of every BF-0 output document as read from that candidate;
+- `git ls-tree -r --full-tree <candidate> -- docs/v4-evidence` output plus
+  exact tree entries for the five candidate-governing paths;
+- SHA-256 identities of all eight BF-0 evidence/index outputs and all five
+  candidate-governing files as read from that candidate;
 - commands, timestamps, exit codes, resolved tool versions, and complete
   stdout/stderr artifact digests; and
 - clean-tree proof before and after validation.
@@ -262,7 +268,8 @@ The independent-review package must additionally include a read-only Git
 bundle or equivalent complete canonical object set containing the baseline
 through the candidate, sufficient for offline `git fsck`, `git cat-file`,
 `git rev-parse`, `git ls-tree`, `git diff-tree`, parent/root-tree verification,
-and exact extraction of the eight reviewed documents.
+and exact extraction of all thirteen reviewed files: eight BF-0
+evidence/index outputs plus five candidate-governing files.
 
 No local, CI, review, or acceptance result is claimed by this manifest; those
 claims require separate external records bound to the same candidate object.
@@ -279,3 +286,4 @@ claims require separate external records bound to the same candidate object.
    evidence.
 6. A changed byte invalidates the corresponding baseline or candidate-governing row and requires a new manifest revision.
 7. TC-02 through TC-04 command-input closures are complete only when every directly consumed file is present in the corresponding `T-TC*-INPUTS` locator.
+8. External identity, validation, bundle, review, and D-009 evidence is complete only when it enumerates and verifies all thirteen reviewed files: eight BF-0 evidence/index outputs plus five candidate-governing files.

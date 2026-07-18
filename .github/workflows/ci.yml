@@ -14,7 +14,11 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - name: Verify and record exact candidate identity
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - name: Validate exact candidate without object drift
         env:
           EVENT_NAME: ${{ github.event_name }}
           EVENT_SHA: ${{ github.sha }}
@@ -23,15 +27,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          actual_commit="$(git rev-parse HEAD)"
-          actual_tree="$(git rev-parse 'HEAD^{tree}')"
           expected_commit="$EVENT_SHA"
-          expected_tree="$actual_tree"
+          expected_tree="$(git rev-parse 'HEAD^{tree}')"
           identity_source="push_event_sha"
           tc10_eligible="NO"
 
           if [ "$EVENT_NAME" = "pull_request" ]; then
-            python3 - <<'PY' > /tmp/bf0-candidate-identity.txt
+            python3 - <<'PY_IDENTITY' > /tmp/bf0-candidate-identity.txt
           import os
           import re
 
@@ -50,7 +52,7 @@ jobs:
               values[name] = matches[0]
           print(values["commit"])
           print(values["tree"])
-          PY
+          PY_IDENTITY
             expected_commit="$(sed -n '1p' /tmp/bf0-candidate-identity.txt)"
             expected_tree="$(sed -n '2p' /tmp/bf0-candidate-identity.txt)"
             test "$expected_commit" = "$PR_HEAD_SHA"
@@ -58,42 +60,61 @@ jobs:
             tc10_eligible="YES"
           fi
 
-          test "$actual_commit" = "$expected_commit"
-          test "$actual_tree" = "$expected_tree"
+          assert_exact_candidate_and_clean() {
+            phase="$1"
+            resolved_commit="$(git rev-parse HEAD)"
+            resolved_tree="$(git rev-parse 'HEAD^{tree}')"
+            test "$resolved_commit" = "$expected_commit"
+            test "$resolved_tree" = "$expected_tree"
+            git diff --exit-code --
+            git diff --cached --exit-code --
+            nonignored_untracked="$(git ls-files --others --exclude-standard)"
+            test -z "$nonignored_untracked"
+            printf -v "${phase}_commit" '%s' "$resolved_commit"
+            printf -v "${phase}_tree" '%s' "$resolved_tree"
+          }
 
+          # No nonignored untracked file is permitted. Ignored dependency/build
+          # outputs may exist, but no tracked or index byte may drift.
+          assert_exact_candidate_and_clean pre_validation
+
+          npm ci
+          npm run lint
+          npx tsc --noEmit --incremental false
+          npm test
+          npm run build
+          git diff --check
+          PYTHONPYCACHEPREFIX=/tmp/truthmarket-pycache python3 -m py_compile contracts/truth_market.py
+
+          assert_exact_candidate_and_clean post_validation
+
+          identity_file="$RUNNER_TEMP/ci-candidate-identity.txt"
           {
             printf 'event_name=%s\n' "$EVENT_NAME"
             printf 'identity_source=%s\n' "$identity_source"
             printf 'expected_candidate_commit=%s\n' "$expected_commit"
-            printf 'actual_candidate_commit=%s\n' "$actual_commit"
             printf 'expected_candidate_tree=%s\n' "$expected_tree"
-            printf 'actual_candidate_tree=%s\n' "$actual_tree"
-            printf 'tc10_eligible=%s\n' "$tc10_eligible"
-          } | tee ci-candidate-identity.txt
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-          cache: npm
-      - run: npm ci
-      - run: npm run lint
-      - run: npx tsc --noEmit
-      - run: npm test
-      - run: npm run build
-      - run: git diff --check
-      - run: PYTHONPYCACHEPREFIX=/tmp/truthmarket-pycache python3 -m py_compile contracts/truth_market.py
-      - name: Record resolved validation environment
-        run: |
-          set -euo pipefail
-          {
+            printf 'pre_validation_commit=%s\n' "$pre_validation_commit"
+            printf 'pre_validation_tree=%s\n' "$pre_validation_tree"
+            printf 'pre_validation_tracked_worktree_clean=YES\n'
+            printf 'pre_validation_index_clean=YES\n'
+            printf 'pre_validation_nonignored_untracked=NONE\n'
+            printf 'post_validation_commit=%s\n' "$post_validation_commit"
+            printf 'post_validation_tree=%s\n' "$post_validation_tree"
+            printf 'post_validation_tracked_worktree_clean=YES\n'
+            printf 'post_validation_index_clean=YES\n'
+            printf 'post_validation_nonignored_untracked=NONE\n'
+            printf 'untracked_policy=NO_NONIGNORED_UNTRACKED_FILES;_IGNORED_GENERATED_OUTPUTS_PERMITTED\n'
             printf 'git_version=%s\n' "$(git --version)"
             printf 'node_version=%s\n' "$(node --version)"
             printf 'npm_version=%s\n' "$(npm --version)"
             printf 'python_version=%s\n' "$(python3 --version 2>&1)"
+            printf 'tc10_eligible=%s\n' "$tc10_eligible"
             printf 'validation_result=PASS\n'
-          } | tee -a ci-candidate-identity.txt
+          } | tee "$identity_file"
       - name: Retain candidate identity evidence
         uses: actions/upload-artifact@v4
         with:
           name: ci-candidate-identity-${{ github.run_id }}
-          path: ci-candidate-identity.txt
+          path: ${{ runner.temp }}/ci-candidate-identity.txt
           if-no-files-found: error

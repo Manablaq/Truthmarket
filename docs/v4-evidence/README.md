@@ -39,6 +39,20 @@ plus this index, for eight output documents total.
 | [Protected-mutation register](PROTECTED_MUTATION_REGISTER.md) | Candidate public writes, conceptual Gate 5 lifecycle transitions, and future PRR-07 checker contract | `MANIFEST_ONLY` |
 | [Write atomicity register](WRITE_ATOMICITY_REGISTER.md) | Candidate-write and conceptual Gate 5 PRR-08 snapshot requirements | `MANIFEST_ONLY` |
 
+For external identity, validation, bundle, review, and D-009 evidence, the exact
+thirteen-file review set is:
+
+- eight BF-0 evidence/index outputs: `DECISION_REGISTER.md`,
+  `PRODUCT_GATE_REGISTER.md`, `PROTECTED_MUTATION_REGISTER.md`, `README.md`,
+  `SOURCE_AND_FIXTURE_HASH_MANIFEST.md`, `STAGE_A_SCHEMA_DERIVATION_RECORD.md`,
+  `TEST_COMMAND_MANIFEST.md`, and `WRITE_ATOMICITY_REGISTER.md`; and
+- five candidate-governing files: `.github/workflows/ci.yml`,
+  `docs/V4_ARCHITECTURE.md`, `docs/V4_BOUNDED_FOUNDATION_PLAN.md`,
+  `docs/V4_MIGRATION_PLAN.md`, and `docs/V4_TEST_PLAN.md`.
+
+Every external candidate-identity record and independent attestation must
+enumerate and verify all thirteen exact candidate bytes.
+
 ## Evidence boundaries
 
 ### Current V3
@@ -95,20 +109,23 @@ No author may edit this package to fill an in-package approval field.
 The reviewed candidate object is the immutable Git commit containing these
 package bytes. Because that object cannot embed its own SHA/tree without
 changing itself, an external candidate-identity record must capture the exact
-repository, commit, tree, parent, and eight reviewed file identities after
-commit formation.
+repository, commit, tree, parent, all eight BF-0 evidence/index output
+identities, and all five candidate-governing identities after commit formation:
+thirteen reviewed files total.
 
 Local validation, CI, and independent-review records must remain external and
 must all bind to that same candidate object. TC-10 eligibility requires a
-pull-request run that explicitly checks out the candidate head SHA, verifies
-`HEAD` and `HEAD^{tree}` against exactly one `BF0-Candidate-Commit` and
-`BF0-Candidate-Tree` marker in the external PR body, and retains those asserted
-and resolved identities as a downloadable artifact. A push run may remain a
+pull-request run that explicitly checks out the candidate head SHA and
+verifies the external markers, event head, commit, tree, tracked worktree,
+index, and nonignored-untracked state immediately before validation and again
+after the final validation command. `validation_result=PASS` may be retained
+only after the post-validation checks succeed. A push run may remain a
 regression check but is not TC-10 candidate evidence. The independent-review
-input must include a read-only Git bundle or equivalent complete canonical object set
-that permits offline `git fsck`, `git cat-file`, `git rev-parse`, `git ls-tree`,
-`git diff-tree`, parent/root-tree verification, and extraction of the eight
-reviewed documents without relying on author-side transcripts.
+input must include a read-only Git bundle or equivalent complete canonical
+object set that permits offline `git fsck`, `git cat-file`, `git rev-parse`,
+`git ls-tree`, `git diff-tree`, parent/root-tree verification, and exact
+extraction of all thirteen reviewed files—eight BF-0 evidence/index outputs
+plus five candidate-governing files—without relying on author-side transcripts.
 
 BF-0 acceptance, if later granted externally, is the exact candidate object
 plus the complete hash-bound external evidence set required by `D-009`. Any

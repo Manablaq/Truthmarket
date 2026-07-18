@@ -30,7 +30,62 @@ acceptance expectations only; it is not an execution record.
 | `TC-07` | TypeScript | `npx tsc --noEmit --incremental false` | Exit `0` | Current frontend type boundary |
 | `TC-08` | Production build | `npm run build` | Exit `0` | Current Next.js application build; not V4 deployment |
 | `TC-09` | Candidate commit whitespace | `git diff-tree --check "$CANDIDATE_SHA^" "$CANDIDATE_SHA"` | Exit `0` | Candidate diff formatting only; does not execute tests |
-| `TC-10` | Exact-candidate pull-request CI | PR body contains exactly one `BF0-Candidate-Commit: <40-hex>` and `BF0-Candidate-Tree: <40-hex>` marker; workflow checks out the PR head SHA, fails unless the markers, event head SHA, `git rev-parse HEAD`, and `git rev-parse HEAD^{tree}` agree, then runs `npm ci && npm run lint && npx tsc --noEmit && npm test && npm run build && git diff --check && PYTHONPYCACHEPREFIX=/tmp/truthmarket-pycache python3 -m py_compile contracts/truth_market.py` and uploads `ci-candidate-identity.txt` | Successful pull-request job with `tc10_eligible=YES`, exact candidate commit/tree equality, and retained identity artifact | CI uses Node `22.x`; workflow Python version and runner image digest are not pinned; push runs record identity but are not TC-10 candidate evidence |
+| `TC-10` | Exact-candidate pull-request CI | PR body contains exactly one `BF0-Candidate-Commit: <40-hex>` and `BF0-Candidate-Tree: <40-hex>` marker; workflow checks out the PR head SHA and, inside one guarded shell step, fails unless the markers, event head, pre-validation commit/tree, and post-validation commit/tree agree and both pre/post tracked worktree, index, and nonignored-untracked checks are clean; between those checks it runs `npm ci && npm run lint && npx tsc --noEmit --incremental false && npm test && npm run build && git diff --check && PYTHONPYCACHEPREFIX=/tmp/truthmarket-pycache python3 -m py_compile contracts/truth_market.py`, then writes `validation_result=PASS` and uploads `ci-candidate-identity.txt` only after the post-validation checks succeed | Successful pull-request job with `tc10_eligible=YES`, identical pre/post exact candidate commit/tree, clean tracked/index/nonignored-untracked states, and retained identity artifact | CI uses Node `22.x`; workflow Python version and runner image digest are not pinned; ignored generated dependency/build outputs are permitted, but any nonignored untracked file fails; push runs record identity but are not TC-10 candidate evidence |
+| `TC-11` | Protected `VALUE`-row completeness | Exact Python command below, executed against the immutable candidate's `docs/v4-evidence/PROTECTED_MUTATION_REGISTER.md` | Exactly 20 `VALUE` rows; exact required 17 public-write plus 3 conceptual-transition names; each rule contains exactly one accepted category token and a pre-mutation enforcement point; exit `0` | Candidate manifest structure only; it does not prove production-source payability or guard dominance |
+
+### TC-11 exact command
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+
+path = Path("docs/v4-evidence/PROTECTED_MUTATION_REGISTER.md")
+category_tokens = (
+    "`ZERO_ONLY`",
+    "`EXACT_POSITIVE_AMOUNT`",
+    "`EXACT_BOND_AMOUNT`",
+)
+expected_names = {
+    "`create_market`", "`stake`", "`submit_evidence`", "`close_evidence`",
+    "`request_resolution`", "`retry_resolution`", "`execute_resolution`",
+    "`expire_attempt`", "`challenge_resolution`", "`request_reresolution`",
+    "`finalize_market`", "`cancel_market`", "`claim_winnings`",
+    "`claim_refund`", "`claim_creation_bond`", "`claim_challenge_bond`",
+    "`claim_retry_bond`", "Claim admission/request",
+    "Payout dispatch/message emission", "Retry dispatch",
+}
+
+found = {}
+for line in path.read_text(encoding="utf-8").splitlines():
+    if not line.startswith("| ") or "`VALUE`" not in line:
+        continue
+    columns = [cell.strip() for cell in line.strip().strip("|").split("|")]
+    if len(columns) != 5 or columns[0] in {
+        "Code", "Candidate operation", "Conceptual transition class"
+    }:
+        continue
+    name, rule = columns[0], columns[3]
+    matches = [token for token in category_tokens if token in rule]
+    if len(matches) != 1:
+        raise SystemExit(f"{name}: expected exactly one category, found {matches}")
+    if "before" not in rule.lower():
+        raise SystemExit(f"{name}: missing pre-mutation enforcement point")
+    if name in found:
+        raise SystemExit(f"duplicate VALUE row: {name}")
+    found[name] = matches[0]
+
+if set(found) != expected_names:
+    raise SystemExit(
+        f"VALUE row-name mismatch: missing={sorted(expected_names-set(found))}; "
+        f"extra={sorted(set(found)-expected_names)}"
+    )
+print("PASS: 20 VALUE rows have one category and pre-mutation enforcement")
+PY
+```
+
+The command input is the exact protected-mutation register blob read from the
+immutable candidate object. Any changed row requires a new candidate identity
+and a new TC-11 execution record.
 
 ## Exact direct command-input closures
 
@@ -71,12 +126,16 @@ author feedback, but it is not the candidate-commit validation record.
 
 The CI record must bind the exact same candidate commit and tree and include the
 workflow run URL and ID, job URL and ID, conclusion, event name, PR head SHA,
-external PR-body candidate markers, asserted and resolved commit/tree,
-`tc10_eligible=YES`, resolved Node/npm/Python versions, available runner-image
-identity, timestamps, complete logs, and the SHA-256 of the downloaded
-`ci-candidate-identity.txt` artifact. The record must prove that checkout and
-all commands executed against that exact object rather than a generated merge
-ref. A push result with `tc10_eligible=NO` is not candidate evidence.
+external PR-body candidate markers, pre-validation and post-validation
+resolved commit/tree, tracked-worktree clean state, index clean state,
+nonignored-untracked state and policy, `tc10_eligible=YES`, resolved
+Node/npm/Python versions, available runner-image identity, timestamps, complete
+logs, and the SHA-256 of the downloaded `ci-candidate-identity.txt` artifact.
+The record must prove that checkout and every command executed against the same
+exact object rather than a generated merge ref or later-drifted bytes, and that
+`validation_result=PASS` was written only after the post-validation identity
+and clean-state checks succeeded. A push result with `tc10_eligible=NO` is not
+candidate evidence.
 
 TC-10 remains `NOT_RUN_FOR_CANDIDATE` until that exact pull-request record exists.
 

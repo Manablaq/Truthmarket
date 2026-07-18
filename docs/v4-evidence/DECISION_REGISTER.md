@@ -25,20 +25,27 @@ decision to implementation code. `OPEN_BLOCKING`, `NOT_AUTHORIZED`,
    BF-0 package bytes under review. Its own commit and tree identities cannot
    be embedded in those same bytes without changing the object.
 2. An external candidate-identity record created after commit formation must
-   capture the exact repository, commit, tree, parent, eight output paths,
-   and output-file identities.
+   capture the exact repository, commit, tree, parent, all eight BF-0
+   evidence/index output paths and identities, and all five candidate-governing
+   paths and identities: thirteen reviewed files total.
 3. Local and CI validation records are external artifacts. Each must bind to
    that same candidate object and identify the command, resolved environment,
    timestamps, exit code, and retained output digest or run URL. A TC-10-
    eligible pull-request run must check out the exact candidate head SHA, read
    exactly one `BF0-Candidate-Commit` and `BF0-Candidate-Tree` marker from the
-   external PR body, fail unless `HEAD` and `HEAD^{tree}` equal those markers,
-   and retain the asserted and resolved identities as a downloadable artifact.
+   external PR body, and fail unless the markers, event head, pre-validation
+   `HEAD`/`HEAD^{tree}`, and post-validation `HEAD`/`HEAD^{tree}` all agree. It
+   must fail on pre- or post-validation tracked-worktree, index, or nonignored-
+   untracked drift and retain both identity/clean-state snapshots as a
+   downloadable artifact; `validation_result=PASS` may be written only after
+   the post-validation checks succeed.
 4. Independent review is an external attestation that binds to the same
-   candidate object and reviewed artifact identities, and records reviewer,
-   date, all P0/P1/P2/P3 findings, and decision. Its review input must include
-   a read-only Git bundle or equivalent complete canonical object set that
-   permits offline commit, parent, root-tree, subtree, blob, and diff checks.
+   candidate object and all thirteen reviewed file identities—eight BF-0
+   evidence/index outputs plus five candidate-governing files—and records
+   reviewer, date, all P0/P1/P2/P3 findings, and decision. Its review input must
+   include a read-only Git bundle or equivalent complete canonical object set
+   that permits offline commit, parent, root-tree, subtree, blob, diff, and
+   exact thirteen-file extraction checks.
 5. BF-0 acceptance, if granted externally, is the exact candidate object plus
    the complete hash-bound evidence set satisfying `D-009`; it is never
    created by editing the candidate object.
@@ -70,3 +77,15 @@ TC-04, enforce exact-candidate CI identity, and state the five claim `ZERO_ONLY`
 rules. Only external validation and independent review may determine whether
 those findings are resolved; this section does not change `D-009`, any PRR
 status, or BF-0 acceptance.
+
+## C4 independent-review correction boundary
+
+The independent C4 review record with SHA-256
+`94cc1cca672383d789471e640ad2ff383653a5aa82da223b68b05b4bb0a1f9e8`
+returned `REQUEST_CHANGES` for residual F-006 plus F-008 and F-009. The
+successor candidate under review contains corrections intended to enforce
+pre/post-validation exact-object and clean-state CI checks, normalize the
+external review scope to thirteen files, and make every `VALUE` row state one
+accepted attached-value category and enforcement point. Only external
+validation and independent review may determine whether those findings are
+resolved.
