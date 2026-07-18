@@ -68,7 +68,7 @@ Progression is sequential for mandatory **Product Release Readiness** work; a fa
 
 ### Stage 0 — specification and decision acceptance
 
-- Independent review reports zero P0/P1 specification findings.
+- Independent review reports zero P0/P1/P2/P3 specification findings.
 - All non-claim semantic decisions and the economic intent, beneficiaries, and amounts of claim paths affecting ABI, payable values, timing, bond accounting, participant indexing, settlement, cancellation, serialization, activity storage, and privileges are accepted in the specification. Gate 5 intentionally retains the exact claim-delivery ABI, storage, status, activity-timing, liability-transition, retry/reconciliation, and asynchronous or two-phase alternatives until that gate selects a model and the resulting specification receives independent review.
 - `AI`, `C`, `G`, `AR`, `F`, `fund_unlock_delay`, both attempt caps, maximum invocation and byte-storage caps, participant/page/activity/leaderboard/stake-call caps, and every other execution/storage-dependent hard value MUST be selected and proven during mandatory product feasibility work before the affected production behavior is accepted. Purely economic bond/minimum-stake values MAY remain proposed through that work but MUST be selected and reviewed before test deployment. Gate 2's optional forensic proof is not a substitute for, or prerequisite to, these product measurements.
 
@@ -84,7 +84,7 @@ After the mandatory Stage 1 product dependencies for implementation are resolved
 
 ### Stage 3 — isolated test deployment
 
-Test deployment remains blocked until implementation is complete, selected parameters are benchmarked, all tests pass, and an independent review reports zero P0/P1 findings. Then deploy a new V4 address in an isolated test environment using public, recorded configuration. Deployment proof MUST require the actual returned transaction state `FINALIZED` and execution result `FINISHED_WITH_RETURN`; `ACCEPTED`, `AGREE`, or a submission hash alone is insufficient. Obtain the deployed address only from a supported typed runtime field or derivation, retrieve code and schema from Bradbury chain ID `4221`, and verify exact local source identity plus config/ABI/address identity. It MUST NOT replace the production V3 alias.
+Test deployment remains blocked until implementation is complete, selected parameters are benchmarked, all tests pass, and an independent review reports zero P0/P1/P2/P3 findings. Then deploy a new V4 address in an isolated test environment using public, recorded configuration. Deployment proof MUST require the actual returned transaction state `FINALIZED` and execution result `FINISHED_WITH_RETURN`; `ACCEPTED`, `AGREE`, or a submission hash alone is insufficient. Obtain the deployed address only from a supported typed runtime field or derivation, retrieve code and schema from Bradbury chain ID `4221`, and verify exact local source identity plus config/ABI/address identity. It MUST NOT replace the production V3 alias.
 
 ### Stage 4 — V4 smoke market
 
@@ -104,7 +104,7 @@ Verify malformed/failing/expired/pending intelligent transactions, stored/effect
 
 ### Stage 8 — independent audit and production candidate
 
-Independent review MUST report zero P0/P1 findings. Maximum complete-invocation/chunk storage, participant allocation, full-precision arithmetic, ranked-leaderboard claim update, closed DTO/page reads, pagination, statistics updates, `uint64` time conversion, direct-value accounting, and activity-cap benchmark evidence plus exact conservation results MUST be attached. Re-run the complete [deployment acceptance criteria](V4_TEST_PLAN.md#12-deployment-acceptance-criteria) against the exact candidate source/config.
+Independent review MUST report zero P0/P1/P2/P3 findings. Maximum complete-invocation/chunk storage, participant allocation, full-precision arithmetic, ranked-leaderboard claim update, closed DTO/page reads, pagination, statistics updates, `uint64` time conversion, direct-value accounting, and activity-cap benchmark evidence plus exact conservation results MUST be attached. Re-run the complete [deployment acceptance criteria](V4_TEST_PLAN.md#12-deployment-acceptance-criteria) against the exact candidate source/config.
 
 ### Stage 9 — production alias update
 
